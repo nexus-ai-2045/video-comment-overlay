@@ -114,6 +114,7 @@ writePublicIndex(demoData, versionInfo);
 copyFile(path.join("src", "app.js"));
 copyFile(path.join("src", "styles.css"));
 copyFile(path.join("docs", "DATA_HANDOFF.md"));
+copyFile(path.join("docs", "SOURCE_CAPTURE_ADAPTERS.md"));
 fs.mkdirSync(path.join(distDir, "data"), { recursive: true });
 fs.writeFileSync(path.join(distDir, "data", "thread-comments.json"), `${JSON.stringify(demoData, null, 2)}\n`, "utf8");
 fs.writeFileSync(path.join(distDir, "version.json"), `${JSON.stringify(versionInfo, null, 2)}\n`, "utf8");
@@ -150,9 +151,11 @@ fs.writeFileSync(
     "1. ZIPを展開します。",
     "2. `index.html` をブラウザで開きます。",
     "3. 必要ならYouTube URL、ローカル動画、コメントJSONを読み込みます。",
-    "4. Discord風の再現だけを見たい場合は、画面モードで `Discord再現` を選びます。",
+    "4. 配信画面の再現だけを見たい場合は、画面モードで `Discord再現`、`YouTube Live再現`、`Twitch再現` を選びます。",
     "5. 録画したい場合は品質、fps、bitrate、codecを選び、`録画診断` の後に `画面録画開始` からブラウザの共有選択を使います。",
     "6. 最後に `録画停止`、`WebM保存` でWebMを書き出します。",
+    "",
+    "`WebM` はブラウザ録画で扱いやすいWeb向け動画形式です。編集ソフトや納品先によってはMP4へ変換して使います。",
     "",
     "## ブラウザでローカルファイルが制限される場合",
     "",
@@ -174,6 +177,7 @@ fs.writeFileSync(
     "",
     "`コメントJSON` から別渡しのJSONを選びます。",
     "元ログ、実参加者名、avatar URL、画像、添付はこのZIPには含めていません。",
+    "Discord、YouTube Live、Twitchのコメントは、同じ正規化JSONへ変換して読み込ませます。",
     "詳しくは `docs/DATA_HANDOFF.md` を参照してください。",
     "",
     "## 手動起動",

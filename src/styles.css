@@ -362,12 +362,18 @@ button:hover {
   overflow: hidden;
 }
 
-.app-shell[data-screen-mode="discordReplay"] .player-stack {
+.app-shell[data-screen-mode="discordReplay"] .player-stack,
+.app-shell[data-screen-mode="youtubeReplay"] .player-stack,
+.app-shell[data-screen-mode="twitchReplay"] .player-stack {
   place-items: stretch;
 }
 
 .app-shell[data-screen-mode="discordReplay"] .video-host,
-.app-shell[data-screen-mode="discordReplay"] .overlay {
+.app-shell[data-screen-mode="discordReplay"] .overlay,
+.app-shell[data-screen-mode="youtubeReplay"] .video-host,
+.app-shell[data-screen-mode="youtubeReplay"] .overlay,
+.app-shell[data-screen-mode="twitchReplay"] .video-host,
+.app-shell[data-screen-mode="twitchReplay"] .overlay {
   display: none;
 }
 
@@ -426,9 +432,118 @@ button:hover {
   font-size: var(--replay-font-size, 15px);
 }
 
-.app-shell[data-screen-mode="discordReplay"] .discord-replay {
+.app-shell[data-screen-mode="discordReplay"] .discord-replay,
+.app-shell[data-screen-mode="youtubeReplay"] .discord-replay,
+.app-shell[data-screen-mode="twitchReplay"] .discord-replay {
   display: grid;
   grid-template-columns: 72px 240px minmax(0, 1fr);
+}
+
+.discord-replay[data-platform="youtube"] {
+  grid-template-columns: 72px minmax(0, 1fr) 360px;
+  background: #0f0f0f;
+}
+
+.discord-replay[data-platform="youtube"] .discord-server-rail {
+  background: #0f0f0f;
+}
+
+.discord-replay[data-platform="youtube"] .server-dot.active,
+.discord-replay[data-platform="youtube"] .discord-channel.active {
+  background: #ff0033;
+}
+
+.discord-replay[data-platform="youtube"] .discord-channel-rail {
+  grid-column: 3;
+  grid-row: 1;
+  background: #181818;
+  border-left: 1px solid #303030;
+  border-right: 0;
+}
+
+.discord-replay[data-platform="youtube"] .discord-chat {
+  grid-column: 2;
+  grid-row: 1;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 34%),
+    #0b0b0b;
+}
+
+.discord-replay[data-platform="youtube"] .discord-chat::before {
+  content: "YouTube Live preview";
+  display: grid;
+  place-items: center;
+  margin: 18px;
+  min-height: 38%;
+  border-radius: 8px;
+  background: #000;
+  color: #aaa;
+  font-weight: 800;
+}
+
+.discord-replay[data-platform="youtube"] .discord-message-list {
+  padding-top: 8px;
+}
+
+.discord-replay[data-platform="youtube"] .discord-message {
+  opacity: 0.42;
+  grid-template-columns: 32px minmax(0, 1fr);
+}
+
+.discord-replay[data-platform="youtube"] .discord-avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.discord-replay[data-platform="youtube"] .discord-message.is-active {
+  background: rgba(255, 255, 255, 0.08);
+  transform: none;
+}
+
+.discord-replay[data-platform="twitch"] {
+  background: #0e0e10;
+}
+
+.discord-replay[data-platform="twitch"] .discord-server-rail,
+.discord-replay[data-platform="twitch"] .discord-channel-rail {
+  background: #18181b;
+}
+
+.discord-replay[data-platform="twitch"] .server-dot.active,
+.discord-replay[data-platform="twitch"] .discord-channel.active {
+  background: #9146ff;
+}
+
+.discord-replay[data-platform="twitch"] .discord-chat {
+  background: #0e0e10;
+}
+
+.discord-replay[data-platform="twitch"] .discord-chat-header {
+  color: #efeff1;
+}
+
+.discord-replay[data-platform="twitch"] .discord-message {
+  grid-template-columns: 0 minmax(0, 1fr);
+  gap: 0;
+  padding: 4px 8px;
+}
+
+.discord-replay[data-platform="twitch"] .discord-avatar {
+  display: none;
+}
+
+.discord-replay[data-platform="twitch"] .discord-message p {
+  display: inline;
+}
+
+.discord-replay[data-platform="twitch"] .discord-message-meta {
+  display: inline-flex;
+  margin-right: 6px;
+}
+
+.discord-replay[data-platform="twitch"] .discord-message.is-active {
+  background: rgba(145, 70, 255, 0.18);
+  transform: none;
 }
 
 .discord-server-rail {
@@ -1134,8 +1249,18 @@ button:hover {
     max-height: none;
   }
 
-  .app-shell[data-screen-mode="discordReplay"] .discord-replay {
+  .app-shell[data-screen-mode="discordReplay"] .discord-replay,
+  .app-shell[data-screen-mode="youtubeReplay"] .discord-replay,
+  .app-shell[data-screen-mode="twitchReplay"] .discord-replay {
     grid-template-columns: 56px 150px minmax(0, 1fr);
+  }
+
+  .discord-replay[data-platform="youtube"] {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .discord-replay[data-platform="youtube"] .discord-channel-rail {
+    display: none;
   }
 
   .server-dot {

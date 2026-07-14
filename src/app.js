@@ -118,6 +118,32 @@ const builtinPresets = {
     lanes: 6,
     maxVisible: 10,
     showAvatars: true
+  },
+  "youtube-live": {
+    designPreset: "subtitle",
+    screenMode: "youtubeReplay",
+    mode: "popup",
+    commentPosition: "bottom",
+    theme: "dark",
+    fontSize: 15,
+    bubbleWidth: 620,
+    duration: 6,
+    lanes: 5,
+    maxVisible: 10,
+    showAvatars: true
+  },
+  "twitch-chat": {
+    designPreset: "discord",
+    screenMode: "twitchReplay",
+    mode: "bubble",
+    commentPosition: "right",
+    theme: "dark",
+    fontSize: 15,
+    bubbleWidth: 560,
+    duration: 6,
+    lanes: 6,
+    maxVisible: 12,
+    showAvatars: false
   }
 };
 
@@ -507,7 +533,108 @@ function updateCommentListState(current) {
   activeTimelineItem?.scrollIntoView({ inline: "center", block: "nearest" });
 }
 
+const replayTemplates = {
+  discordReplay: {
+    platform: "discord",
+    serverTitle: "Nexus AI",
+    channelTitle: "# meeting-chat",
+    railLabels: ["N", "D", "+"],
+    sideItems: ["# meeting-chat", "# materials", "# archive"],
+    sideFooter: "LIVE / replay",
+    composer: "Message #meeting-chat",
+    metaLabel: "Discord live replay"
+  },
+  youtubeReplay: {
+    platform: "youtube",
+    serverTitle: "YouTube Live",
+    channelTitle: "ライブチャット",
+    railLabels: ["▶", "L", "＋"],
+    sideItems: ["トップチャット", "メンバー", "固定表示"],
+    sideFooter: "LIVE CHAT",
+    composer: "チャットに参加...",
+    metaLabel: "YouTube Live replay"
+  },
+  twitchReplay: {
+    platform: "twitch",
+    serverTitle: "Twitch",
+    channelTitle: "Stream Chat",
+    railLabels: ["T", "★", "＋"],
+    sideItems: ["Following", "Chat", "Clips"],
+    sideFooter: "STREAM CHAT",
+    composer: "Send a message",
+    metaLabel: "Twitch replay"
+  }
+};
+
+function isReplayMode(mode = els.screenMode.value) {
+  return mode !== "overlay";
+}
+
+function currentReplayTemplate() {
+  return replayTemplates[els.screenMode.value] || replayTemplates.discordReplay;
+}
+
+function renderReplayShell() {
+  const template = currentReplayTemplate();
+  if (!els.discordReplay) return;
+  els.discordReplay.dataset.platform = template.platform;
+  els.discordReplay.setAttribute("aria-label", `${template.metaLabel} screen`);
+
+  const serverRail = document.createElement("div");
+  serverRail.className = "discord-server-rail";
+  serverRail.setAttribute("aria-hidden", "true");
+  for (const [index, label] of template.railLabels.entries()) {
+    const dot = document.createElement("span");
+    dot.className = `server-dot${index === 0 ? " active" : ""}`;
+    dot.textContent = label;
+    serverRail.appendChild(dot);
+  }
+
+  const channelRail = document.createElement("div");
+  channelRail.className = "discord-channel-rail";
+  const title = document.createElement("div");
+  title.className = "discord-channel-title";
+  title.textContent = template.serverTitle;
+  channelRail.appendChild(title);
+  for (const [index, label] of template.sideItems.entries()) {
+    const item = document.createElement("button");
+    item.className = `discord-channel${index === 0 ? " active" : ""}`;
+    item.type = "button";
+    item.textContent = label;
+    channelRail.appendChild(item);
+  }
+  const footer = document.createElement("div");
+  footer.className = "discord-voice-box";
+  footer.textContent = template.sideFooter;
+  channelRail.appendChild(footer);
+
+  const chat = document.createElement("div");
+  chat.className = "discord-chat";
+  const header = document.createElement("header");
+  header.className = "discord-chat-header";
+  const heading = document.createElement("strong");
+  heading.textContent = template.channelTitle;
+  const clock = document.createElement("span");
+  clock.id = "discordReplayClock";
+  clock.textContent = "00:00.0";
+  header.append(heading, clock);
+
+  const list = document.createElement("div");
+  list.id = "discordReplayList";
+  list.className = "discord-message-list";
+  const composer = document.createElement("div");
+  composer.className = "discord-composer";
+  composer.textContent = template.composer;
+  chat.append(header, list, composer);
+
+  els.discordReplay.replaceChildren(serverRail, channelRail, chat);
+  els.discordReplayList = list;
+  els.discordReplayClock = clock;
+}
+
 function renderDiscordReplay() {
+  if (!isReplayMode()) return;
+  renderReplayShell();
   if (!els.discordReplayList) return;
   els.discordReplayList.replaceChildren(
     ...commentData.comments.map((comment) => {
