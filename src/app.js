@@ -691,7 +691,8 @@ const replayTemplates = {
     sideItems: ["# meeting-chat", "# materials", "# archive"],
     sideFooter: "LIVE / replay",
     composer: "Message #meeting-chat",
-    metaLabel: "Discord live replay"
+    metaLabel: "Discord live replay",
+    headerActions: ["検索", "ピン", "メンバー"]
   },
   youtubeReplay: {
     platform: "youtube",
@@ -701,7 +702,10 @@ const replayTemplates = {
     sideItems: ["トップチャット", "メンバー", "固定表示"],
     sideFooter: "LIVE CHAT",
     composer: "チャットに参加...",
-    metaLabel: "YouTube Live replay"
+    metaLabel: "YouTube Live replay",
+    previewTitle: "ライブ配信プレビュー",
+    previewMeta: "再生画面 / コメント同期 / 録画用",
+    headerActions: ["上位チャット", "最新", "設定"]
   },
   twitchReplay: {
     platform: "twitch",
@@ -711,7 +715,10 @@ const replayTemplates = {
     sideItems: ["Following", "Chat", "Clips"],
     sideFooter: "STREAM CHAT",
     composer: "Send a message",
-    metaLabel: "Twitch replay"
+    metaLabel: "Twitch replay",
+    previewTitle: "Stream Preview",
+    previewMeta: "LIVE / 1080p / Low latency",
+    headerActions: ["Chat", "Users", "Mod"]
   }
 };
 
@@ -745,6 +752,22 @@ function renderReplayShell() {
   title.className = "discord-channel-title";
   title.textContent = template.serverTitle;
   channelRail.appendChild(title);
+  if (template.previewTitle) {
+    const preview = document.createElement("section");
+    preview.className = "replay-preview";
+    const live = document.createElement("span");
+    live.className = "replay-live-badge";
+    live.textContent = "LIVE";
+    const previewTitle = document.createElement("strong");
+    previewTitle.textContent = template.previewTitle;
+    const previewMeta = document.createElement("span");
+    previewMeta.textContent = template.previewMeta || "";
+    const controls = document.createElement("div");
+    controls.className = "replay-preview-controls";
+    controls.append(document.createElement("span"), document.createElement("span"), document.createElement("span"));
+    preview.append(live, previewTitle, previewMeta, controls);
+    channelRail.appendChild(preview);
+  }
   for (const [index, label] of template.sideItems.entries()) {
     const item = document.createElement("button");
     item.className = `discord-channel${index === 0 ? " active" : ""}`;
@@ -763,10 +786,17 @@ function renderReplayShell() {
   header.className = "discord-chat-header";
   const heading = document.createElement("strong");
   heading.textContent = template.channelTitle;
+  const headerActions = document.createElement("div");
+  headerActions.className = "replay-header-actions";
+  for (const label of template.headerActions || []) {
+    const action = document.createElement("span");
+    action.textContent = label;
+    headerActions.appendChild(action);
+  }
   const clock = document.createElement("span");
   clock.id = "discordReplayClock";
   clock.textContent = "00:00.0";
-  header.append(heading, clock);
+  header.append(heading, headerActions, clock);
 
   const list = document.createElement("div");
   list.id = "discordReplayList";

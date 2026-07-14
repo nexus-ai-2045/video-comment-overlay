@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Video Comment Overlay Capture",
+  "version": "0.1.0",
+  "description": "Discord、YouTube Live、Twitchの表示中コメントをvideo_comment_overlay.v1 JSONとして保存します。",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "コメント取得"
+  },
+  "permissions": ["activeTab", "scripting", "downloads", "storage"],
+  "host_permissions": [
+    "https://discord.com/*",
+    "https://www.youtube.com/*",
+    "https://youtube.com/*",
+    "https://www.twitch.tv/*",
+    "https://twitch.tv/*"
+  ]
+}

@@ -65,3 +65,11 @@ capture-package/
    - Discord: 既存raw / REST backfill結果を入力にする。
    - YouTube Live: エクスポート済みlive chat JSONを入力にする。
    - Twitch: VOD chat JSONを入力にする。
+
+## 一般ユーザー向けの取得口
+
+一般ユーザーが配信ページから自分でコメントを取得する場合は、Chrome拡張を別アダプタとして用意する方針にする。静的viewer本体から、ログイン済みのDiscord / YouTube Live / Twitchページを直接読む設計にはしない。
+
+初期MVPは `extensions/chrome-capture/` にある。表示中DOMから見えている範囲を取得し、`visible-partial` の `video_comment_overlay.v1` JSONとして保存する。
+
+詳細は [CAPTURE_EXTENSION_PLAN.md](CAPTURE_EXTENSION_PLAN.md) を参照。

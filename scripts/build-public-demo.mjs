@@ -36,6 +36,13 @@ function copyFile(relativePath) {
   fs.copyFileSync(src, dst);
 }
 
+function copyDir(relativePath) {
+  const src = path.join(root, relativePath);
+  const dst = path.join(distDir, relativePath);
+  if (!fs.existsSync(src)) return;
+  fs.cpSync(src, dst, { recursive: true });
+}
+
 function writePublicIndex(demoData, versionInfo) {
   const source = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const embedScript = [
@@ -113,8 +120,14 @@ fs.mkdirSync(distDir, { recursive: true });
 writePublicIndex(demoData, versionInfo);
 copyFile(path.join("src", "app.js"));
 copyFile(path.join("src", "styles.css"));
+copyFile("LICENSE");
+copyFile("SECURITY.md");
+copyFile("PUBLIC_READY.md");
+copyFile("CHANGELOG.md");
 copyFile(path.join("docs", "DATA_HANDOFF.md"));
 copyFile(path.join("docs", "SOURCE_CAPTURE_ADAPTERS.md"));
+copyFile(path.join("docs", "PUBLICATION_INVENTORY.md"));
+copyDir(path.join("extensions", "chrome-capture"));
 fs.mkdirSync(path.join(distDir, "data"), { recursive: true });
 fs.writeFileSync(path.join(distDir, "data", "thread-comments.json"), `${JSON.stringify(demoData, null, 2)}\n`, "utf8");
 fs.writeFileSync(path.join(distDir, "version.json"), `${JSON.stringify(versionInfo, null, 2)}\n`, "utf8");
@@ -182,6 +195,11 @@ fs.writeFileSync(
     "元ログ、実参加者名、avatar URL、画像、添付はこのZIPには含めていません。",
     "Discord、YouTube Live、Twitchのコメントは、同じ正規化JSONへ変換して読み込ませます。",
     "詳しくは `docs/DATA_HANDOFF.md` を参照してください。",
+    "",
+    "## Chrome拡張MVP",
+    "",
+    "`extensions/chrome-capture/` をChromeのデベロッパーモードで読み込むと、表示中のDiscord / YouTube Live / TwitchコメントをJSON保存できます。",
+    "このMVPは表示中DOMに存在する範囲だけを取得するため、出力は `visible-partial` として扱います。",
     "",
     "## 手動起動",
     "",

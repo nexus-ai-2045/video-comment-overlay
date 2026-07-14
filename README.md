@@ -17,6 +17,7 @@
 - コメント一覧から時刻、表示名、本文、非表示を編集する
 - YouTube iframe API が使える場合は動画の再生、停止、シークに同期する
 - 共有前レビュー用の匿名デモパッケージを生成する
+- Chrome拡張MVPで、表示中のDiscord / YouTube Live / TwitchコメントをJSON保存する
 
 ## すぐ試す
 
@@ -106,6 +107,10 @@ npm run start
 
 前面の `URLから取込` は、直接読めるJSON / NDJSON URLには対応します。YouTube Live、Twitch、Discordの通常の配信ページURLから履歴を直接取得する処理は、今後のサービス別アダプタ対象です。CORSや認証で取れない場合は、保存済みJSONを `ファイル取込` してください。
 
+一般ユーザーが自分のブラウザで開いているDiscord / YouTube Live / Twitchからコメントを取得する口は、Chrome拡張としてviewer本体から分ける方針です。viewer本体はローカルJSONの再生・調整・録画に集中し、取得拡張はユーザー操作で対象タブから読み取り、`video_comment_overlay.v1` JSONとprivate manifestを書き出します。詳細は [docs/CAPTURE_EXTENSION_PLAN.md](docs/CAPTURE_EXTENSION_PLAN.md) を参照してください。
+
+初期MVPは [extensions/chrome-capture](extensions/chrome-capture) にあります。これは表示中DOMから見えている範囲だけを取得するため、出力は `visible-partial` として扱います。
+
 初期対象:
 
 | サービス | 入力候補 | 状態 |
@@ -121,16 +126,22 @@ npm run start
 ```powershell
 npm run version:json
 npm run check
+npm run check:extension
 npm run verify
+npm run build:extension-zip
 npm run build:public-zip
+npm run public:check
 ```
 
 | コマンド | 用途 |
 |---|---|
 | `npm run version:json` | package version、Git commit、branch、dirty状態をJSONで表示 |
 | `npm run check` | JavaScript構文チェック |
+| `npm run check:extension` | Chrome拡張MVPの権限と禁止APIを確認 |
+| `npm run build:extension-zip` | Chrome拡張MVPのZIPを生成 |
 | `npm run build:public-zip` | 匿名デモの `dist/public-demo/` とZIPを生成 |
 | `npm run verify` | 構文、ZIP生成、private marker scanをまとめて実行 |
+| `npm run public:check` | public化前のローカル確認をまとめて実行 |
 
 ## データ境界
 
@@ -148,6 +159,16 @@ npm run build:public-zip
 
 `dist/video-comment-overlay-public-demo.zip`
 
+Chrome拡張だけを渡す場合:
+
+```powershell
+npm run build:extension-zip
+```
+
+生成先:
+
+`dist/video-comment-overlay-chrome-capture.zip`
+
 ZIPは匿名デモデータだけを同梱します。展開後は `index.html` を開けば試せます。ブラウザのローカルファイル制限に当たる場合は、同梱の `start-windows.bat` または `start-mac-linux.sh` でローカルサーバーを起動します。
 
 GitHubのsource ZIPにも private データやテストデータは含めない前提です。取得済みログを使った検証は、ローカルにだけ置いた `data/thread-comments.json` で行います。
@@ -158,11 +179,16 @@ GitHubのsource ZIPにも private データやテストデータは含めない�
 
 ## バージョン管理
 
-アプリの表示バージョンはGitから自動生成します。
+アプリの表示バージョンはGitから自動生成します。初期public-ready MVPのパッケージバージョンは `0.1.0` です。
 
 - 通常のソース起動では `src/version.js` の静的フォールバックを表示します。
 - `npm run build:public-zip` では、その時点のGit commit / branch / dirty状態を `dist/public-demo/version.json` とHTML内の `window.VCO_VERSION` に埋め込みます。
 - 手動で `package.json` の `version` を上げるのは、リリース単位を切る時だけにします。
+- 変更履歴は [CHANGELOG.md](CHANGELOG.md) に残します。
+
+## ライセンス
+
+MIT Licenseです。詳細は [LICENSE](LICENSE) を参照してください。
 
 ## Git運用
 

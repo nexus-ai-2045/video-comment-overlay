@@ -9,6 +9,7 @@
 | `data/*.json` | repo外 | privateログやテストデータはrepoに含めず、必要に応じて別ファイルで渡す |
 | `dist/public-demo/` | 共有候補 | ビルド時に生成した匿名デモJSONを `thread-comments.json` として同梱した静的デモ |
 | `dist/video-comment-overlay-public-demo.zip` | 共有候補 | `dist/public-demo/` をZIP化した匿名デモ。展開後に `index.html` で起動できる |
+| `dist/video-comment-overlay-chrome-capture.zip` | 共有候補 | Chrome拡張MVP。表示中DOMのpartial取得だけを行う |
 
 ## 現在の取得状況
 
@@ -18,6 +19,7 @@
 
 ```powershell
 npm run build:public-zip
+npm run build:extension-zip
 node scripts/scan-private-markers.mjs dist/public-demo
 ```
 
@@ -26,6 +28,8 @@ node scripts/scan-private-markers.mjs dist/public-demo
 `dist/public-demo/`
 
 `dist/video-comment-overlay-public-demo.zip`
+
+`dist/video-comment-overlay-chrome-capture.zip`
 
 このフォルダまたはZIPを共有する場合も、事前に中身を人間レビューしてください。
 
