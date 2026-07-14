@@ -42,6 +42,10 @@ const els = {
   presetImport: document.querySelector("#presetImport"),
   toggleSettings: document.querySelector("#toggleSettings"),
   closeSettings: document.querySelector("#closeSettings"),
+  quickPlatform: document.querySelector("#quickPlatform"),
+  sourceUrl: document.querySelector("#sourceUrl"),
+  fetchSource: document.querySelector("#fetchSource"),
+  sourceCommentFile: document.querySelector("#sourceCommentFile"),
   playPause: document.querySelector("#playPause"),
   restart: document.querySelector("#restart"),
   seekBar: document.querySelector("#seekBar"),
@@ -163,6 +167,7 @@ let mediaRecorder = null;
 let recordingStream = null;
 let recordedChunks = [];
 let recordedBlob = null;
+let statusHoldUntil = 0;
 
 function loadYoutubeApi() {
   if (window.YT?.Player) {
@@ -374,6 +379,149 @@ async function loadDiscordNdjson(file) {
   setStatus(`${file.name} をDiscord rawとして変換: ${commentData.comments.length}件`);
 }
 
+async function loadSourceCommentFile(file) {
+  const text = await file.text();
+  const platform = els.quickPlatform.value;
+  const data = parseCommentSourceText(text);
+  commentData = normalizeImportedSourceData(data, platform, file.name);
+  fired = new Set();
+  els.overlay.replaceChildren();
+  renderCommentList();
+  renderTimelineDrawer();
+  renderDiscordReplay();
+  setStatus(`${file.name} を${platformLabel(platform)}コメントとして読込済み: ${commentData.comments.length}件`);
+  updateNextCommentHint(0);
+}
+
+function parseCommentSourceText(text) {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) return JSON.parse(trimmed);
+  return trimmed
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
+function normalizeImportedSourceData(data, platform, importedFrom = "") {
+  if (data?.schema === "video_comment_overlay.v1") return normalizeData(data);
+  const rows = Array.isArray(data) ? data : data.comments || data.items || data.messages || [];
+  const videoStartIso = localDateTimeToIso(els.videoStartAt.value) || inferFirstTimestamp(rows) || new Date().toISOString();
+  const videoStartMs = Date.parse(videoStartIso);
+  const comments = rows.map((row, index) => normalizeSourceMessage(row, index, platform, videoStartMs));
+  const participants = {};
+  for (const comment of comments) {
+    if (!participants[comment.authorId]) {
+      participants[comment.authorId] = {
+        name: comment.authorName,
+        avatarUrl: comment.avatarUrl,
+        color: comment.color || colorFromString(comment.authorId)
+      };
+    }
+  }
+  return normalizeData({
+    schema: "video_comment_overlay.v1",
+    source: {
+      type: platform,
+      url: els.sourceUrl.value.trim(),
+      importedFrom
+    },
+    timeline: {
+      videoStartAt: videoStartIso,
+      commentTimeMode: "absolute"
+    },
+    participants,
+    comments
+  });
+}
+
+function normalizeSourceMessage(row, index, platform, videoStartMs) {
+  if (platform === "discord") return normalizeDiscordMessage(row, index, videoStartMs);
+  if (platform === "youtube") return normalizeYoutubeMessage(row, index, videoStartMs);
+  if (platform === "twitch") return normalizeTwitchMessage(row, index, videoStartMs);
+  return normalizeGenericMessage(row, index, platform, videoStartMs);
+}
+
+function normalizeYoutubeMessage(row, index, videoStartMs) {
+  const snippet = row.snippet || row;
+  const author = row.authorDetails || row.author || {};
+  const timestamp = snippet.publishedAt || snippet.timestamp || row.timestamp || "";
+  const timestampMs = timestamp ? Date.parse(timestamp) : Number.NaN;
+  const authorName = author.displayName || author.name || snippet.authorName || row.authorName || "unknown";
+  const authorId = String(author.channelId || author.id || authorName || `youtube-author-${index}`);
+  return {
+    id: String(row.id || snippet.id || `youtube-${index}`),
+    authorId,
+    authorName,
+    avatarUrl: author.profileImageUrl || author.avatarUrl || "",
+    timestamp,
+    time: Number.isFinite(Number(row.time)) ? Number(row.time) : Number.isFinite(timestampMs) ? Math.max(0, (timestampMs - videoStartMs) / 1000) : index,
+    text: snippet.displayMessage || snippet.textMessageDetails?.messageText || row.text || row.message || "",
+    kind: "message",
+    emoji: [],
+    stickers: [],
+    attachments: []
+  };
+}
+
+function normalizeTwitchMessage(row, index, videoStartMs) {
+  const message = row.message || row;
+  const commenter = row.commenter || row.author || row.user || {};
+  const timestamp = row.created_at || row.timestamp || row.publishedAt || "";
+  const timestampMs = timestamp ? Date.parse(timestamp) : Number.NaN;
+  const authorName = commenter.display_name || commenter.name || row.authorName || row.username || "unknown";
+  const authorId = String(commenter._id || commenter.id || row.authorId || authorName || `twitch-author-${index}`);
+  const seconds = row.content_offset_seconds ?? row.time ?? row.offsetSeconds;
+  return {
+    id: String(row._id || row.id || `twitch-${index}`),
+    authorId,
+    authorName,
+    avatarUrl: commenter.profile_image_url || commenter.avatarUrl || "",
+    timestamp,
+    time: Number.isFinite(Number(seconds)) ? Number(seconds) : Number.isFinite(timestampMs) ? Math.max(0, (timestampMs - videoStartMs) / 1000) : index,
+    text: message.body || message.text || row.text || row.message || "",
+    kind: "message",
+    emoji: row.emotes || [],
+    stickers: [],
+    attachments: []
+  };
+}
+
+function normalizeGenericMessage(row, index, platform, videoStartMs) {
+  const timestamp = row.timestamp || row.createdAt || row.created_at || "";
+  const timestampMs = timestamp ? Date.parse(timestamp) : Number.NaN;
+  const authorName = row.authorName || row.author?.name || row.user?.name || row.username || "unknown";
+  const authorId = String(row.authorId || row.author?.id || row.user?.id || authorName || `${platform}-author-${index}`);
+  return {
+    id: String(row.id || `${platform}-${index}`),
+    authorId,
+    authorName,
+    avatarUrl: row.avatarUrl || row.author?.avatarUrl || row.user?.avatarUrl || "",
+    timestamp,
+    time: Number.isFinite(Number(row.time)) ? Number(row.time) : Number.isFinite(timestampMs) ? Math.max(0, (timestampMs - videoStartMs) / 1000) : index,
+    text: row.text || row.content || row.message || "",
+    kind: row.kind || "message",
+    emoji: row.emoji || [],
+    stickers: row.stickers || [],
+    attachments: row.attachments || []
+  };
+}
+
+function inferFirstTimestamp(rows) {
+  for (const row of rows || []) {
+    const timestamp =
+      row.timestamp ||
+      row.createdAt ||
+      row.created_at ||
+      row.publishedAt ||
+      row.snippet?.publishedAt ||
+      row.snippet?.timestamp;
+    if (timestamp && Number.isFinite(Date.parse(timestamp))) return new Date(Date.parse(timestamp)).toISOString();
+  }
+  return "";
+}
+
 function colorFromString(value) {
   const palette = ["#2f80ed", "#27ae60", "#f2994a", "#9b51e0", "#eb5757", "#00a6a6", "#d946ef", "#6fcf97"];
   let hash = 0;
@@ -392,8 +540,9 @@ function extractYoutubeId(url) {
   }
 }
 
-function setStatus(message) {
+function setStatus(message, holdMs = 0) {
   els.status.textContent = message;
+  statusHoldUntil = holdMs > 0 ? Date.now() + holdMs : 0;
 }
 
 function renderVersionBadge() {
@@ -708,8 +857,79 @@ function setMode() {
 function setScreenMode() {
   const mode = els.screenMode.value;
   els.appShell.dataset.screenMode = mode;
+  syncQuickPlatformFromScreenMode(mode);
   renderDiscordReplay();
   updateSeekUi(getCurrentTime());
+}
+
+function setPlatform(platform) {
+  const screenModeMap = {
+    discord: "discordReplay",
+    youtube: "youtubeReplay",
+    twitch: "twitchReplay"
+  };
+  els.quickPlatform.value = platform;
+  els.screenMode.value = screenModeMap[platform] || "discordReplay";
+  setScreenMode();
+  setStatus(`${platformLabel(platform)}モードに切り替えました。コメントはローカルJSONまたはJSON URLから取り込めます。`, 3500);
+}
+
+function syncQuickPlatformFromScreenMode(mode) {
+  const platformMap = {
+    discordReplay: "discord",
+    youtubeReplay: "youtube",
+    twitchReplay: "twitch"
+  };
+  const platform = platformMap[mode];
+  if (platform && els.quickPlatform.value !== platform) els.quickPlatform.value = platform;
+}
+
+function platformLabel(platform) {
+  return {
+    discord: "Discord",
+    youtube: "YouTube Live",
+    twitch: "Twitch"
+  }[platform] || platform;
+}
+
+async function fetchSourceComments() {
+  const url = els.sourceUrl.value.trim() || guessSourceUrlForPlatform();
+  const platform = els.quickPlatform.value;
+  if (!url) {
+    setStatus("コメントURLまたはJSON URLを入力してください。保存済みファイルがある場合は「ファイル取込」を使えます。", 7000);
+    return;
+  }
+  els.sourceUrl.value = url;
+  if (!looksLikeDirectCommentFile(url)) {
+    setStatus(`${platformLabel(platform)}の配信ページからの自動取得はアダプタ準備中です。現時点ではエクスポート済みJSON/NDJSON、または直接読めるJSON URLを取り込めます。`, 9000);
+    return;
+  }
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const text = await response.text();
+    const data = parseCommentSourceText(text);
+    commentData = normalizeImportedSourceData(data, platform, url.split("/").pop() || "remote-comments");
+    fired = new Set();
+    els.overlay.replaceChildren();
+    renderCommentList();
+    renderTimelineDrawer();
+    renderDiscordReplay();
+    setStatus(`${url} を${platformLabel(platform)}コメントとして取込済み: ${commentData.comments.length}件`, 7000);
+  } catch (error) {
+    setStatus(`URL取込エラー: ${error.message}。CORSや認証が必要な場合は、保存済みJSONをファイル取込してください。`, 9000);
+  }
+}
+
+function looksLikeDirectCommentFile(url) {
+  return /\.(json|jsonl|ndjson)(\?|#|$)/i.test(url) || url.startsWith(location.origin) || url.startsWith("/");
+}
+
+function guessSourceUrlForPlatform() {
+  const platform = els.quickPlatform.value;
+  if (platform === "discord") return els.discordUrl.value.trim();
+  if (platform === "youtube") return els.youtubeUrl.value.trim();
+  return "";
 }
 
 function setListLayout() {
@@ -804,6 +1024,7 @@ function emitDueComments(current) {
 }
 
 function updateNextCommentHint(current) {
+  if (Date.now() < statusHoldUntil) return;
   if (timerRunning) return;
   const next = commentData.comments.find((comment) => comment.time >= current);
   if (!next) return;
@@ -975,6 +1196,12 @@ function bindEvents() {
   els.loadYoutube.addEventListener("click", loadYoutube);
   els.toggleSettings.addEventListener("click", () => setSettingsOpen(els.appShell.dataset.settingsOpen !== "true"));
   els.closeSettings.addEventListener("click", () => setSettingsOpen(false));
+  els.quickPlatform.addEventListener("change", () => setPlatform(els.quickPlatform.value));
+  els.fetchSource.addEventListener("click", () => fetchSourceComments());
+  els.sourceCommentFile.addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    if (file) loadSourceCommentFile(file).catch((error) => setStatus(`配信コメント読込エラー: ${error.message}`));
+  });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") setSettingsOpen(false);
   });

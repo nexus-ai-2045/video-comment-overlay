@@ -8,6 +8,8 @@
 - コメントJSON / Discord raw NDJSON を読み込む
 - LINE風、ニコ動方式、Discord風、字幕風の表示を切り替える
 - Discord / YouTube Live / Twitch風の再現ビューで、コメントの流れだけを再生する
+- 前面の配信元切替で、Discord / YouTube Live / Twitchの取込先と再現テンプレを切り替える
+- 保存済みのDiscord / YouTube Live / TwitchコメントJSONを共通形式へ正規化して読み込む
 - YouTube風の下部シークバーでコメントタイムラインを操作する
 - ブラウザの画面共有録画を使い、HD / Full HD / QHD品質のWebMとして保存する
 - 表示位置、テーマ、文字サイズ、吹き出し幅、レーン数、同時表示数を調整する
@@ -23,6 +25,8 @@ ZIPで受け取った場合:
 1. `video-comment-overlay-public-demo.zip` を展開します。
 2. `index.html` をブラウザで開きます。
 3. ブラウザのローカルファイル制限に当たる場合は、展開フォルダ内の `start-windows.bat` を実行し、`http://127.0.0.1:8765/` を開きます。
+
+ローカル開発環境では `data/thread-comments.json` が存在すると自動で読み込みます。これは検証用のprivateデータ置き場で、repoや配布ZIPには含めません。受け取った人は、前面の `ファイル取込` または設定内の `コメントJSON` から別渡しJSONを読み込みます。
 
 ソースから起動する場合:
 
@@ -99,6 +103,8 @@ npm run start
 ## 配信単位のコメント取得
 
 このrepoに含むアプリ本体は、まず「ローカルに保存済みのコメントデータを読み込んで再生・録画する」ことを中心にしています。配信URLから自動取得する機能は、サービスごとの認証、API、利用規約、保存形式が違うため、アダプタとして分けて育てる想定です。
+
+前面の `URLから取込` は、直接読めるJSON / NDJSON URLには対応します。YouTube Live、Twitch、Discordの通常の配信ページURLから履歴を直接取得する処理は、今後のサービス別アダプタ対象です。CORSや認証で取れない場合は、保存済みJSONを `ファイル取込` してください。
 
 初期対象:
 

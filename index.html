@@ -172,7 +172,26 @@
             <p id="status">サンプルコメントを読込済み</p>
             <span id="versionBadge" class="version-badge">version loading</span>
           </div>
-          <button id="toggleSettings" type="button">設定</button>
+          <div class="quick-source-controls" aria-label="配信元と取込">
+            <label>
+              配信元
+              <select id="quickPlatform">
+                <option value="discord">Discord</option>
+                <option value="youtube">YouTube Live</option>
+                <option value="twitch">Twitch</option>
+              </select>
+            </label>
+            <label>
+              コメントURL
+              <input id="sourceUrl" type="url" placeholder="配信URLまたはJSON URL">
+            </label>
+            <button id="fetchSource" type="button">URLから取込</button>
+            <label class="quick-file-button">
+              ファイル取込
+              <input id="sourceCommentFile" type="file" accept="application/json,.json,.ndjson,.jsonl,text/plain">
+            </label>
+            <button id="toggleSettings" type="button">設定</button>
+          </div>
         </div>
 
         <div class="player-stack">
