@@ -128,6 +128,7 @@ npm run version:json
 npm run check
 npm run check:extension
 npm run verify
+npm run build:extension-zip
 npm run build:public-zip
 ```
 
@@ -136,6 +137,7 @@ npm run build:public-zip
 | `npm run version:json` | package version、Git commit、branch、dirty状態をJSONで表示 |
 | `npm run check` | JavaScript構文チェック |
 | `npm run check:extension` | Chrome拡張MVPの権限と禁止APIを確認 |
+| `npm run build:extension-zip` | Chrome拡張MVPのZIPを生成 |
 | `npm run build:public-zip` | 匿名デモの `dist/public-demo/` とZIPを生成 |
 | `npm run verify` | 構文、ZIP生成、private marker scanをまとめて実行 |
 
@@ -154,6 +156,16 @@ npm run build:public-zip
 `dist/public-demo/`
 
 `dist/video-comment-overlay-public-demo.zip`
+
+Chrome拡張だけを渡す場合:
+
+```powershell
+npm run build:extension-zip
+```
+
+生成先:
+
+`dist/video-comment-overlay-chrome-capture.zip`
 
 ZIPは匿名デモデータだけを同梱します。展開後は `index.html` を開けば試せます。ブラウザのローカルファイル制限に当たる場合は、同梱の `start-windows.bat` または `start-mac-linux.sh` でローカルサーバーを起動します。
 
