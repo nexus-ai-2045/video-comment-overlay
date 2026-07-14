@@ -22,7 +22,7 @@
 | PR #1 | レビューOK / 未merge | private repo内でmergeしてmainを最新化する |
 | README | 概ねOK | public向けに「MVP」「visible-partial」「WebM」の注意を最終確認する |
 | SECURITY.md | 追加済み | public化後の連絡先やSecurity Advisories運用を決める |
-| LICENSE | 未決定 | `UNLICENSED` のままprivate配布にするか、MIT/Apache-2.0等を選ぶ |
+| LICENSE | MIT追加済み | public化前に内容を目視確認する |
 | secret scan | ローカル一部OK | `npm run scan:private` と配布ZIP scanを再実行する |
 | personal path scan | ローカル一部OK | ローカルユーザーパスや個人名義がsource archiveにないことを再確認する |
 | Chrome拡張実機 | 部分OK | Chrome API smokeはOK。拡張読み込みは手動で実施する |
@@ -34,6 +34,7 @@
 npm run verify
 node scripts/scan-private-markers.mjs dist/public-demo
 npm run build:extension-zip
+npm run public:check
 git status --short --ignored
 ```
 
@@ -45,7 +46,7 @@ public化する場合は、次を明示してから現在会話でyesを待つ�
 
 - 対象repository: `nexus-ai-2045/video-comment-overlay`
 - 正確な操作: `gh repo edit nexus-ai-2045/video-comment-overlay --visibility public`
-- README、LICENSE、SECURITY.md、PUBLIC_READY.md、secret scan、personal path scanの確認状況
+- README、LICENSE、SECURITY.md、PUBLIC_READY.md、CHANGELOG.md、secret scan、personal path scanの確認状況
 - commit historyとfilesがWeb上で見えるようになること
 
 この確認なしにpublic化しない。

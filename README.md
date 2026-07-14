@@ -130,6 +130,7 @@ npm run check:extension
 npm run verify
 npm run build:extension-zip
 npm run build:public-zip
+npm run public:check
 ```
 
 | コマンド | 用途 |
@@ -140,6 +141,7 @@ npm run build:public-zip
 | `npm run build:extension-zip` | Chrome拡張MVPのZIPを生成 |
 | `npm run build:public-zip` | 匿名デモの `dist/public-demo/` とZIPを生成 |
 | `npm run verify` | 構文、ZIP生成、private marker scanをまとめて実行 |
+| `npm run public:check` | public化前のローカル確認をまとめて実行 |
 
 ## データ境界
 
@@ -177,11 +179,16 @@ GitHubのsource ZIPにも private データやテストデータは含めない�
 
 ## バージョン管理
 
-アプリの表示バージョンはGitから自動生成します。
+アプリの表示バージョンはGitから自動生成します。初期public-ready MVPのパッケージバージョンは `0.1.0` です。
 
 - 通常のソース起動では `src/version.js` の静的フォールバックを表示します。
 - `npm run build:public-zip` では、その時点のGit commit / branch / dirty状態を `dist/public-demo/version.json` とHTML内の `window.VCO_VERSION` に埋め込みます。
 - 手動で `package.json` の `version` を上げるのは、リリース単位を切る時だけにします。
+- 変更履歴は [CHANGELOG.md](CHANGELOG.md) に残します。
+
+## ライセンス
+
+MIT Licenseです。詳細は [LICENSE](LICENSE) を参照してください。
 
 ## Git運用
 
