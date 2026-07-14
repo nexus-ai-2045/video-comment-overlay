@@ -87,7 +87,11 @@ capture-package/
 
 ## MVPの停止線
 
-- Discord / YouTube Live / Twitchのうち、まず1サービスでJSON出力まで通す。
+- Discord / YouTube Live / Twitchの表示中DOMからJSON出力まで通す。
 - 取得範囲がpartialの場合はmanifestに明記する。
 - 実ログ、実URL、実ID、参加者名、avatar URL、添付をrepoに入れない。
 - `npm run verify` とprivate marker scanを通す。
+
+## 現在のMVP
+
+`extensions/chrome-capture/` にManifest V3拡張を追加済み。対象タブで見えているコメントDOMを読み、`video_comment_overlay.v1` JSONとしてローカル保存する。完全履歴ではなく `visible-partial` として扱う。
