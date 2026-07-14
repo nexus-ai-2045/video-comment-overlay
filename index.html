@@ -217,6 +217,37 @@
             <span id="timeReadout">00:00.0 / 00:00.0</span>
           </div>
           <div class="recording-controls" aria-label="録画コントロール">
+            <label>
+              録画品質
+              <select id="recordQuality">
+                <option value="1080p">Full HD 1080p</option>
+                <option value="720p">HD 720p</option>
+                <option value="1440p">QHD 1440p</option>
+                <option value="source">画面に合わせる</option>
+              </select>
+            </label>
+            <label>
+              fps
+              <select id="recordFps">
+                <option value="30">30</option>
+                <option value="60">60</option>
+                <option value="24">24</option>
+              </select>
+            </label>
+            <label>
+              bitrate Mbps
+              <input id="recordBitrate" type="number" value="12" min="2" max="80" step="1">
+            </label>
+            <label>
+              codec
+              <select id="recordCodec">
+                <option value="auto">自動</option>
+                <option value="vp9">VP9</option>
+                <option value="vp8">VP8</option>
+                <option value="webm">WebM標準</option>
+              </select>
+            </label>
+            <button id="checkRecording" type="button">録画診断</button>
             <button id="startRecording" type="button">画面録画開始</button>
             <button id="stopRecording" type="button" disabled>録画停止</button>
             <button id="downloadRecording" type="button" disabled>WebM保存</button>

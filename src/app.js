@@ -47,6 +47,11 @@ const els = {
   seekBar: document.querySelector("#seekBar"),
   clock: document.querySelector("#clock"),
   timeReadout: document.querySelector("#timeReadout"),
+  recordQuality: document.querySelector("#recordQuality"),
+  recordFps: document.querySelector("#recordFps"),
+  recordBitrate: document.querySelector("#recordBitrate"),
+  recordCodec: document.querySelector("#recordCodec"),
+  checkRecording: document.querySelector("#checkRecording"),
   startRecording: document.querySelector("#startRecording"),
   stopRecording: document.querySelector("#stopRecording"),
   downloadRecording: document.querySelector("#downloadRecording"),
@@ -958,6 +963,7 @@ function bindEvents() {
     setTimerRunning(!timerRunning);
   });
   els.restart.addEventListener("click", resetPlayback);
+  els.checkRecording.addEventListener("click", checkRecordingEngine);
   els.startRecording.addEventListener("click", startScreenRecording);
   els.stopRecording.addEventListener("click", stopScreenRecording);
   els.downloadRecording.addEventListener("click", downloadRecording);
@@ -982,19 +988,30 @@ function bindEvents() {
 }
 
 async function startScreenRecording() {
-  if (!navigator.mediaDevices?.getDisplayMedia || typeof MediaRecorder === "undefined") {
-    setRecordingStatus("このブラウザは画面録画に未対応です。");
+  const support = getRecordingSupport();
+  if (!support.ok) {
+    setRecordingStatus(`録画不可: ${support.blockers.join(" / ")}`);
     return;
   }
   try {
+    const settings = getRecordingSettings();
     recordedChunks = [];
     recordedBlob = null;
     recordingStream = await navigator.mediaDevices.getDisplayMedia({
-      video: { frameRate: 30 },
+      video: {
+        width: settings.width ? { ideal: settings.width } : undefined,
+        height: settings.height ? { ideal: settings.height } : undefined,
+        frameRate: { ideal: settings.frameRate, max: settings.frameRate }
+      },
       audio: false
     });
-    const mimeType = getSupportedMimeType();
-    mediaRecorder = new MediaRecorder(recordingStream, mimeType ? { mimeType } : undefined);
+    const actual = getActualRecordingSettings(recordingStream);
+    const mimeType = getSupportedMimeType(settings.codec);
+    const options = {
+      videoBitsPerSecond: settings.videoBitsPerSecond
+    };
+    if (mimeType) options.mimeType = mimeType;
+    mediaRecorder = new MediaRecorder(recordingStream, options);
     mediaRecorder.addEventListener("dataavailable", (event) => {
       if (event.data.size > 0) recordedChunks.push(event.data);
     });
@@ -1011,7 +1028,7 @@ async function startScreenRecording() {
     els.startRecording.disabled = true;
     els.stopRecording.disabled = false;
     els.downloadRecording.disabled = true;
-    setRecordingStatus("録画中。ブラウザの共有選択で、このタブまたはウィンドウを選んでください。");
+    setRecordingStatus(`録画中: ${actual.label} / ${settings.bitrateMbps}Mbps / ${mediaRecorder.mimeType || "browser default"}`);
   } catch (error) {
     setRecordingStatus(`録画開始を中止しました: ${error.message}`);
   }
@@ -1037,8 +1054,80 @@ function setRecordingStatus(message) {
   els.recordingStatus.textContent = message;
 }
 
-function getSupportedMimeType() {
-  const types = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
+function checkRecordingEngine() {
+  const support = getRecordingSupport();
+  const settings = getRecordingSettings();
+  if (!support.ok) {
+    setRecordingStatus(`録画不可: ${support.blockers.join(" / ")}`);
+    return;
+  }
+  setRecordingStatus(
+    `録画対応OK: ${settings.label} / ${settings.frameRate}fps / ${settings.bitrateMbps}Mbps / ${support.supportedMimeTypes.join(", ")}`
+  );
+}
+
+function getRecordingSupport() {
+  const blockers = [];
+  if (!window.isSecureContext && location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+    blockers.push("HTTPSまたはlocalhostが必要");
+  }
+  if (!navigator.mediaDevices?.getDisplayMedia) blockers.push("getDisplayMedia未対応");
+  if (typeof MediaRecorder === "undefined") blockers.push("MediaRecorder未対応");
+  const supportedMimeTypes = typeof MediaRecorder === "undefined" ? [] : [
+    "video/webm;codecs=vp9",
+    "video/webm;codecs=vp8",
+    "video/webm"
+  ].filter((type) => MediaRecorder.isTypeSupported(type));
+  if (typeof MediaRecorder !== "undefined" && supportedMimeTypes.length === 0) blockers.push("WebM録画codec未対応");
+  return {
+    ok: blockers.length === 0,
+    blockers,
+    supportedMimeTypes
+  };
+}
+
+function getRecordingSettings() {
+  const quality = els.recordQuality.value;
+  const qualityMap = {
+    "720p": { width: 1280, height: 720, label: "HD 1280x720" },
+    "1080p": { width: 1920, height: 1080, label: "Full HD 1920x1080" },
+    "1440p": { width: 2560, height: 1440, label: "QHD 2560x1440" },
+    source: { width: 0, height: 0, label: "画面に合わせる" }
+  };
+  const selected = qualityMap[quality] || qualityMap["1080p"];
+  const frameRate = Number(els.recordFps.value || 30);
+  const bitrateMbps = Math.max(2, Math.min(80, Number(els.recordBitrate.value || 12)));
+  return {
+    ...selected,
+    frameRate,
+    bitrateMbps,
+    codec: els.recordCodec.value,
+    videoBitsPerSecond: bitrateMbps * 1000 * 1000
+  };
+}
+
+function getActualRecordingSettings(stream) {
+  const track = stream.getVideoTracks()[0];
+  const settings = track?.getSettings?.() || {};
+  const width = settings.width ? `${settings.width}` : "?";
+  const height = settings.height ? `${settings.height}` : "?";
+  const frameRate = settings.frameRate ? `${Math.round(settings.frameRate)}fps` : "fps不明";
+  return {
+    width: settings.width || 0,
+    height: settings.height || 0,
+    frameRate: settings.frameRate || 0,
+    label: `${width}x${height} ${frameRate}`
+  };
+}
+
+function getSupportedMimeType(preferredCodec = "auto") {
+  const orderedTypes = {
+    vp9: ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"],
+    vp8: ["video/webm;codecs=vp8", "video/webm;codecs=vp9", "video/webm"],
+    webm: ["video/webm", "video/webm;codecs=vp9", "video/webm;codecs=vp8"],
+    auto: ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"]
+  };
+  const types = orderedTypes[preferredCodec] || orderedTypes.auto;
   return types.find((type) => MediaRecorder.isTypeSupported(type)) || "";
 }
 

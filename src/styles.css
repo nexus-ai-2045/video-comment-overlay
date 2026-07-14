@@ -668,9 +668,13 @@ button:hover {
 
 .recording-controls {
   display: grid;
-  grid-template-columns: auto auto auto 1fr;
+  grid-template-columns: minmax(150px, 1.3fr) minmax(72px, 0.6fr) minmax(112px, 0.7fr) minmax(120px, 0.8fr);
   gap: 8px;
   align-items: center;
+}
+
+.recording-controls label {
+  min-width: 0;
 }
 
 .recording-controls button {
@@ -683,6 +687,7 @@ button:hover {
 }
 
 #recordingStatus {
+  grid-column: 1 / -1;
   min-width: 0;
   color: var(--muted);
   font-size: 13px;
