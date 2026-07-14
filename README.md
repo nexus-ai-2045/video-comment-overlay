@@ -67,7 +67,6 @@ npm run start
 ```powershell
 npm run version:json
 npm run check
-npm test
 npm run verify
 npm run build:public-zip
 ```
@@ -76,21 +75,12 @@ npm run build:public-zip
 |---|---|
 | `npm run version:json` | package version、Git commit、branch、dirty状態をJSONで表示 |
 | `npm run check` | JavaScript構文チェック |
-| `npm test` | Node標準テストランナーでデータ/バージョン契約を確認 |
 | `npm run build:public-zip` | 匿名デモの `dist/public-demo/` とZIPを生成 |
-| `npm run verify` | 構文、テスト、ZIP生成、private marker scan、source archive検証をまとめて実行 |
-
-任意でローカルGit hookを有効化できます。
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1
-```
-
-有効化後は `git commit` 前に `npm run check`、`npm test`、`npm run scan:private` が走ります。
+| `npm run verify` | 構文、ZIP生成、private marker scanをまとめて実行 |
 
 ## データ境界
 
-`data/thread-comments*.json` と `data/comments.sample.json` は private データです。Discord由来の本文、参加者名、avatar URL、実URLを含むため、Git管理から外し、外部共有しません。
+`data/` 配下のコメントデータはrepoに含めません。Discord由来の本文、参加者名、avatar URL、実URL、テスト用コメントJSONは別ファイルとして渡します。
 
 共有前レビュー用には匿名化デモを生成します。
 
@@ -106,7 +96,7 @@ npm run build:public-zip
 
 ZIPは匿名デモデータだけを同梱します。展開後は `index.html` を開けば試せます。ブラウザのローカルファイル制限に当たる場合は、同梱の `start-windows.bat` または `start-mac-linux.sh` でローカルサーバーを起動します。
 
-GitHubのsource ZIPにも private データは含めない前提です。取得済みログを使った検証は、ローカルにだけ置いた `data/thread-comments.json` で行います。
+GitHubのsource ZIPにも private データやテストデータは含めない前提です。取得済みログを使った検証は、ローカルにだけ置いた `data/thread-comments.json` で行います。
 
 詳しくは [SHARE_REVIEW.md](SHARE_REVIEW.md) を参照してください。
 
@@ -118,25 +108,15 @@ GitHubのsource ZIPにも private データは含めない前提です。取得�
 - `npm run build:public-zip` では、その時点のGit commit / branch / dirty状態を `dist/public-demo/version.json` とHTML内の `window.VCO_VERSION` に埋め込みます。
 - 手動で `package.json` の `version` を上げるのは、リリース単位を切る時だけにします。
 
-## Git / CI
+## Git運用
 
-このリポジトリはGitHub Actionsで `npm run verify` を実行します。
+このrepoにはGitHub ActionsやGit hooksを含めません。必要な確認は手元で明示的に実行します。
 
-- workflow: `.github/workflows/ci.yml`
-- 対象: `main`、`codex/**`、`main` 向けPR
-- OS: `windows-latest`
-
-PR前のローカル推奨:
+変更前後のローカル推奨:
 
 ```powershell
 npm run verify
 git status --short
-```
-
-ローカルGit hookを使う場合:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1
 ```
 
 ## 取得状況

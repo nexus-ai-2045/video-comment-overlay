@@ -13,37 +13,30 @@
 - LINE風、ニコニコ動画風、Discord風、字幕風の表示プリセットがある。
 - コメント一覧、編集フォーム、シークバー、設定ドロワーがある。
 - 匿名デモZIPは `npm run build:public-zip` で生成できる。
-- GitHub source archive相当からも `npm run build:public-zip` が成功する。
-- tracked sourceと配布ZIPのprivate marker scanを `npm run verify` に含めた。
+- tracked sourceと配布ZIPのprivate marker scanをローカルコマンドで確認できる。
 
 ## 改善済み
 
 - private Discord fixtureをGit管理から外した。
-- READMEにZIP利用、ソース起動、JSON形式、検証、バージョン管理、CIを追記した。
+- テスト用コメントデータもrepoから外し、必要に応じて別ファイルで渡す方針にした。
+- READMEにZIP利用、ソース起動、JSON形式、検証、バージョン管理を追記した。
 - Git由来のversion metadataをビルド成果物へ埋め込むようにした。
-- Node標準テストとGitHub Actionsを追加した。
-- 任意導入のGit `pre-commit` hookを追加した。
+- GitHub Actions、Git hooks、テスト同梱はrepoから外した。
 
 ## 残る注意点
 
-- `data/thread-comments*.json` はローカルprivateデータであり、repoやZIPに含めない。
+- `data/*.json` はローカルprivateデータまたは別渡しのテストデータであり、repoに含めない。
 - `dist/` は生成物でありGit管理外。共有時は生成後にZIPを確認する。
 - Discord URLからのライブ取得は未実装。現状はローカルJSON/NDJSON読込が中心。
 - YouTube iframe APIの同期はブラウザとYouTube側の制約に依存する。
 
 ## 運用ゲート
 
-PR前:
+変更前後:
 
 ```powershell
 npm run verify
 git status --short
-```
-
-ローカルGit hookを使う場合:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1
 ```
 
 共有前:

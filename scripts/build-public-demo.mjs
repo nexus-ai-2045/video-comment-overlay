@@ -4,8 +4,6 @@ import { getVersionInfo, versionScript } from "./version-info.mjs";
 
 const root = process.cwd();
 const sourcePath = path.join(root, "data", "thread-comments.json");
-const fallbackSourcePath = path.join(root, "data", "comments.public-demo.json");
-const demoDataPath = path.join(root, "data", "comments.public-demo.json");
 const distDir = path.join(root, "dist", "public-demo");
 
 const demoNames = ["参加者A", "参加者B", "参加者C", "参加者D", "参加者E", "参加者F", "参加者G"];
@@ -19,6 +17,17 @@ const demoTexts = [
   "共有用は匿名データで確認します。"
 ];
 const colors = ["#2f80ed", "#27ae60", "#f2994a", "#9b51e0", "#eb5757", "#00a6a6", "#5865f2"];
+const fallbackComments = demoTexts.map((text, index) => ({
+  id: `seed-comment-${index + 1}`,
+  authorId: `seed-user-${(index % 3) + 1}`,
+  authorName: demoNames[index % 3],
+  time: 1 + index * 3,
+  text,
+  kind: "message",
+  emoji: [],
+  stickers: [],
+  attachments: []
+}));
 
 function copyFile(relativePath) {
   const src = path.join(root, relativePath);
@@ -42,12 +51,13 @@ function writePublicIndex(demoData, versionInfo) {
   fs.writeFileSync(path.join(distDir, "index.html"), html, "utf8");
 }
 
-const sourceDataPath = fs.existsSync(sourcePath) ? sourcePath : fallbackSourcePath;
-const privateData = JSON.parse(fs.readFileSync(sourceDataPath, "utf8"));
+const sourceData = fs.existsSync(sourcePath)
+  ? JSON.parse(fs.readFileSync(sourcePath, "utf8"))
+  : { comments: fallbackComments };
 const authorMap = new Map();
 const participants = {};
 
-const comments = privateData.comments.map((comment, index) => {
+const comments = sourceData.comments.map((comment, index) => {
   if (!authorMap.has(comment.authorId)) {
     const nextIndex = authorMap.size;
     const id = `demo-user-${nextIndex + 1}`;
@@ -98,16 +108,13 @@ const demoData = {
 };
 const versionInfo = getVersionInfo(root);
 
-fs.mkdirSync(path.dirname(demoDataPath), { recursive: true });
-fs.writeFileSync(demoDataPath, `${JSON.stringify(demoData, null, 2)}\n`, "utf8");
-
 fs.rmSync(distDir, { recursive: true, force: true });
 fs.mkdirSync(distDir, { recursive: true });
 writePublicIndex(demoData, versionInfo);
 copyFile(path.join("src", "app.js"));
 copyFile(path.join("src", "styles.css"));
-copyFile(path.join("data", "comments.public-demo.json"));
-fs.copyFileSync(demoDataPath, path.join(distDir, "data", "thread-comments.json"));
+fs.mkdirSync(path.join(distDir, "data"), { recursive: true });
+fs.writeFileSync(path.join(distDir, "data", "thread-comments.json"), `${JSON.stringify(demoData, null, 2)}\n`, "utf8");
 fs.writeFileSync(path.join(distDir, "version.json"), `${JSON.stringify(versionInfo, null, 2)}\n`, "utf8");
 fs.writeFileSync(
   path.join(distDir, "start-windows.bat"),
@@ -170,7 +177,6 @@ fs.writeFileSync(
 
 console.log(JSON.stringify({
   ok: true,
-  demoDataPath,
   distDir,
   version: versionInfo.label,
   comments: comments.length,
