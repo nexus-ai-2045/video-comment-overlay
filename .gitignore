@@ -5,4 +5,5 @@ dist/
 *.tmp
 .env
 .env.*
-data/*.json
+data/
+local-data/

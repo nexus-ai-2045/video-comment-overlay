@@ -24,6 +24,7 @@ const els = {
   ndjsonFile: document.querySelector("#ndjsonFile"),
   mode: document.querySelector("#mode"),
   designPreset: document.querySelector("#designPreset"),
+  screenMode: document.querySelector("#screenMode"),
   listLayout: document.querySelector("#listLayout"),
   commentPosition: document.querySelector("#commentPosition"),
   theme: document.querySelector("#theme"),
@@ -46,12 +47,19 @@ const els = {
   seekBar: document.querySelector("#seekBar"),
   clock: document.querySelector("#clock"),
   timeReadout: document.querySelector("#timeReadout"),
+  startRecording: document.querySelector("#startRecording"),
+  stopRecording: document.querySelector("#stopRecording"),
+  downloadRecording: document.querySelector("#downloadRecording"),
+  recordingStatus: document.querySelector("#recordingStatus"),
   status: document.querySelector("#status"),
   versionBadge: document.querySelector("#versionBadge"),
   videoHost: document.querySelector("#videoHost"),
   localVideo: document.querySelector("#localVideo"),
   youtubeFrame: document.querySelector("#youtubeFrame"),
   overlay: document.querySelector("#overlay"),
+  discordReplay: document.querySelector("#discordReplay"),
+  discordReplayList: document.querySelector("#discordReplayList"),
+  discordReplayClock: document.querySelector("#discordReplayClock"),
   timelineDrawer: document.querySelector("#timelineDrawer"),
   appShell: document.querySelector(".app-shell"),
   commentPanel: document.querySelector(".comment-panel"),
@@ -69,6 +77,7 @@ const els = {
 const builtinPresets = {
   "line-soft": {
     designPreset: "line",
+    screenMode: "overlay",
     mode: "bubble",
     commentPosition: "left",
     theme: "soft",
@@ -81,6 +90,7 @@ const builtinPresets = {
   },
   "niconico-bold": {
     designPreset: "niconico",
+    screenMode: "overlay",
     mode: "danmaku",
     commentPosition: "auto",
     theme: "dark",
@@ -93,6 +103,7 @@ const builtinPresets = {
   },
   "discord-compact": {
     designPreset: "discord",
+    screenMode: "discordReplay",
     mode: "bubble",
     commentPosition: "left",
     theme: "dark",
@@ -116,6 +127,11 @@ let seekingWithBar = false;
 let selectedCommentId = "";
 let youtubePlayer = null;
 let youtubeReady = false;
+let activeDiscordReplayId = "";
+let mediaRecorder = null;
+let recordingStream = null;
+let recordedChunks = [];
+let recordedBlob = null;
 
 function loadYoutubeApi() {
   if (window.YT?.Player) {
@@ -167,6 +183,7 @@ function getTimelineEnd() {
 function getCurrentPresetSettings() {
   return {
     designPreset: els.designPreset.value,
+    screenMode: els.screenMode.value,
     mode: els.mode.value,
     listLayout: els.listLayout.value,
     commentPosition: els.commentPosition.value,
@@ -190,6 +207,7 @@ function applyPresetSettings(settings) {
     else control.value = String(value);
   }
   setListLayout();
+  setScreenMode();
   applyDesignPreset(false);
   applyVisualSettings();
 }
@@ -199,6 +217,7 @@ function applyVisualSettings() {
   els.appShell.dataset.showAvatars = els.showAvatars.checked ? "true" : "false";
   els.appShell.style.setProperty("--comment-font-size", `${Number(els.fontSize.value || 15)}px`);
   els.appShell.style.setProperty("--comment-max-width", `${Number(els.bubbleWidth.value || 560)}px`);
+  els.discordReplay?.style.setProperty("--replay-font-size", `${Number(els.fontSize.value || 15)}px`);
   updateSeekUi(getCurrentTime());
 }
 
@@ -320,6 +339,7 @@ async function loadDiscordNdjson(file) {
   els.overlay.replaceChildren();
   renderCommentList();
   renderTimelineDrawer();
+  renderDiscordReplay();
   setStatus(`${file.name} をDiscord rawとして変換: ${commentData.comments.length}件`);
 }
 
@@ -396,6 +416,7 @@ function renderCommentList() {
   updateCommentListState(0);
   updateSeekUi(0);
   loadSelectedCommentEditor();
+  renderDiscordReplay();
 }
 
 function loadSelectedCommentEditor() {
@@ -428,6 +449,7 @@ function applyCommentEdit() {
   fired = new Set([...fired].filter((id) => !commentData.comments.find((entry) => entry.id === id && entry.hidden)));
   renderCommentList();
   renderTimelineDrawer();
+  renderDiscordReplay();
   updateSeekUi(getCurrentTime());
   setStatus("コメント編集を反映しました。");
 }
@@ -480,11 +502,82 @@ function updateCommentListState(current) {
   activeTimelineItem?.scrollIntoView({ inline: "center", block: "nearest" });
 }
 
+function renderDiscordReplay() {
+  if (!els.discordReplayList) return;
+  els.discordReplayList.replaceChildren(
+    ...commentData.comments.map((comment) => {
+      const row = document.createElement("article");
+      row.className = "discord-message";
+      row.dataset.commentId = comment.id;
+      row.style.setProperty("--author-color", comment.color);
+      row.classList.toggle("is-hidden", Boolean(comment.hidden));
+
+      const avatar = document.createElement("span");
+      avatar.className = "discord-avatar";
+      if (comment.avatarUrl) {
+        const img = document.createElement("img");
+        img.src = comment.avatarUrl;
+        img.alt = "";
+        avatar.appendChild(img);
+      } else {
+        avatar.textContent = (comment.authorName || "?").slice(0, 1);
+      }
+
+      const body = document.createElement("div");
+      body.className = "discord-message-body";
+
+      const meta = document.createElement("div");
+      meta.className = "discord-message-meta";
+
+      const author = document.createElement("strong");
+      author.textContent = comment.authorName || "unknown";
+
+      const time = document.createElement("span");
+      time.textContent = formatTime(comment.time);
+
+      const text = document.createElement("p");
+      text.textContent = renderText(comment) || "［本文なし］";
+
+      meta.append(author, time);
+      body.append(meta, text);
+      row.append(avatar, body);
+      return row;
+    })
+  );
+  activeDiscordReplayId = "";
+  updateDiscordReplayState(getCurrentTime());
+}
+
+function updateDiscordReplayState(current) {
+  if (!els.discordReplayList) return;
+  let active = "";
+  for (const comment of commentData.comments) {
+    if (!comment.hidden && comment.time <= current) active = comment.id;
+  }
+  els.discordReplayClock.textContent = formatTime(current);
+  if (active === activeDiscordReplayId) return;
+  activeDiscordReplayId = active;
+  for (const row of els.discordReplayList.querySelectorAll(".discord-message")) {
+    const comment = commentData.comments.find((item) => item.id === row.dataset.commentId);
+    row.classList.toggle("is-past", Boolean(comment && comment.time < current));
+    row.classList.toggle("is-active", row.dataset.commentId === active);
+  }
+  const activeRow = active ? els.discordReplayList.querySelector(`[data-comment-id="${CSS.escape(active)}"]`) : null;
+  activeRow?.scrollIntoView({ block: "center" });
+}
+
 function setMode() {
   const design = els.designPreset.value;
   const position = els.commentPosition.value;
   els.overlay.className = `overlay ${els.mode.value} design-${design} position-${position}`;
   els.appShell.dataset.design = design;
+}
+
+function setScreenMode() {
+  const mode = els.screenMode.value;
+  els.appShell.dataset.screenMode = mode;
+  renderDiscordReplay();
+  updateSeekUi(getCurrentTime());
 }
 
 function setListLayout() {
@@ -550,6 +643,7 @@ function tick() {
   els.clock.textContent = formatTime(displayTime);
   emitDueComments(displayTime);
   updateCommentListState(displayTime);
+  updateDiscordReplayState(displayTime);
   updateSeekUi(displayTime);
   updateNextCommentHint(displayTime);
   timerHandle = requestAnimationFrame(tick);
@@ -649,6 +743,7 @@ function resetPlayback() {
   timerRunning = false;
   if (els.videoHost.classList.contains("has-local")) els.localVideo.currentTime = 0;
   updateCommentListState(0);
+  updateDiscordReplayState(0);
   updateSeekUi(0);
   updateTransportLabel();
 }
@@ -670,6 +765,7 @@ function seekToTime(seconds) {
     youtubePlayer.seekTo(seekTo, true);
   }
   updateCommentListState(seekTo);
+  updateDiscordReplayState(seekTo);
   updateSeekUi(seekTo);
 }
 
@@ -681,6 +777,7 @@ async function loadCommentsFromFile(file) {
   els.overlay.replaceChildren();
   renderCommentList();
   renderTimelineDrawer();
+  renderDiscordReplay();
   setStatus(`${file.name} を読込済み: ${commentData.comments.length}件`);
   updateNextCommentHint(0);
 }
@@ -693,6 +790,7 @@ async function loadDefaultThreadComments() {
     els.discordUrl.value = data.source?.url || "";
     renderCommentList();
     renderTimelineDrawer();
+    renderDiscordReplay();
     const coverage = data.source?.coverage === "partial-known" ? "部分取得" : "取得";
     setStatus(`${label}の${coverage}コメントを読込済み: ${commentData.comments.length}件`);
     updateNextCommentHint(0);
@@ -767,6 +865,7 @@ function bindEvents() {
     applyDesignPreset(true);
     applyVisualSettings();
   });
+  els.screenMode.addEventListener("change", setScreenMode);
   els.listLayout.addEventListener("change", setListLayout);
   for (const control of [els.commentPosition, els.theme, els.fontSize, els.bubbleWidth, els.maxVisible, els.showAvatars, els.duration, els.lanes]) {
     control.addEventListener("input", () => {
@@ -859,6 +958,9 @@ function bindEvents() {
     setTimerRunning(!timerRunning);
   });
   els.restart.addEventListener("click", resetPlayback);
+  els.startRecording.addEventListener("click", startScreenRecording);
+  els.stopRecording.addEventListener("click", stopScreenRecording);
+  els.downloadRecording.addEventListener("click", downloadRecording);
   els.seekBar.addEventListener("input", () => {
     seekingWithBar = true;
     const nextTime = Number(els.seekBar.value || 0) / 10;
@@ -879,9 +981,71 @@ function bindEvents() {
   els.localVideo.addEventListener("loadedmetadata", () => updateSeekUi(getCurrentTime()));
 }
 
+async function startScreenRecording() {
+  if (!navigator.mediaDevices?.getDisplayMedia || typeof MediaRecorder === "undefined") {
+    setRecordingStatus("このブラウザは画面録画に未対応です。");
+    return;
+  }
+  try {
+    recordedChunks = [];
+    recordedBlob = null;
+    recordingStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { frameRate: 30 },
+      audio: false
+    });
+    const mimeType = getSupportedMimeType();
+    mediaRecorder = new MediaRecorder(recordingStream, mimeType ? { mimeType } : undefined);
+    mediaRecorder.addEventListener("dataavailable", (event) => {
+      if (event.data.size > 0) recordedChunks.push(event.data);
+    });
+    mediaRecorder.addEventListener("stop", () => {
+      recordedBlob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || "video/webm" });
+      recordingStream?.getTracks().forEach((track) => track.stop());
+      recordingStream = null;
+      els.startRecording.disabled = false;
+      els.stopRecording.disabled = true;
+      els.downloadRecording.disabled = !recordedBlob;
+      setRecordingStatus(recordedBlob ? "録画完了。WebM保存できます。" : "録画データがありません。");
+    });
+    mediaRecorder.start();
+    els.startRecording.disabled = true;
+    els.stopRecording.disabled = false;
+    els.downloadRecording.disabled = true;
+    setRecordingStatus("録画中。ブラウザの共有選択で、このタブまたはウィンドウを選んでください。");
+  } catch (error) {
+    setRecordingStatus(`録画開始を中止しました: ${error.message}`);
+  }
+}
+
+function stopScreenRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+}
+
+function downloadRecording() {
+  if (!recordedBlob) return;
+  const link = document.createElement("a");
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  link.href = URL.createObjectURL(recordedBlob);
+  link.download = `video-comment-overlay-replay-${timestamp}.webm`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function setRecordingStatus(message) {
+  els.recordingStatus.textContent = message;
+}
+
+function getSupportedMimeType() {
+  const types = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
+  return types.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+}
+
 bindEvents();
 refreshPresetSelect();
 applyDesignPreset(false);
+setScreenMode();
 setSettingsOpen(false);
 setListLayout();
 applyVisualSettings();

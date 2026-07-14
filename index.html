@@ -70,6 +70,14 @@
           </label>
 
           <label>
+            画面モード
+            <select id="screenMode">
+              <option value="overlay">動画オーバーレイ</option>
+              <option value="discordReplay">Discord再現</option>
+            </select>
+          </label>
+
+          <label>
             コメント一覧
             <select id="listLayout">
               <option value="side">右側に固定</option>
@@ -175,6 +183,28 @@
             </div>
           </div>
           <div id="overlay" class="overlay bubble" aria-live="polite"></div>
+          <section id="discordReplay" class="discord-replay" aria-label="Discord再現画面">
+            <div class="discord-server-rail" aria-hidden="true">
+              <span class="server-dot active">N</span>
+              <span class="server-dot">D</span>
+              <span class="server-dot">+</span>
+            </div>
+            <div class="discord-channel-rail">
+              <div class="discord-channel-title">Nexus AI</div>
+              <button class="discord-channel active" type="button"># meeting-chat</button>
+              <button class="discord-channel" type="button"># materials</button>
+              <button class="discord-channel" type="button"># archive</button>
+              <div class="discord-voice-box">LIVE / replay</div>
+            </div>
+            <div class="discord-chat">
+              <header class="discord-chat-header">
+                <strong># meeting-chat</strong>
+                <span id="discordReplayClock">00:00.0</span>
+              </header>
+              <div id="discordReplayList" class="discord-message-list"></div>
+              <div class="discord-composer">Message #meeting-chat</div>
+            </div>
+          </section>
           <div id="timelineDrawer" class="timeline-drawer" aria-label="コメントタイムライン"></div>
         </div>
 
@@ -185,6 +215,12 @@
             <button id="restart" type="button">最初から</button>
             <span id="clock">00:00.0</span>
             <span id="timeReadout">00:00.0 / 00:00.0</span>
+          </div>
+          <div class="recording-controls" aria-label="録画コントロール">
+            <button id="startRecording" type="button">画面録画開始</button>
+            <button id="stopRecording" type="button" disabled>録画停止</button>
+            <button id="downloadRecording" type="button" disabled>WebM保存</button>
+            <span id="recordingStatus">録画待機中</span>
           </div>
         </div>
       </section>

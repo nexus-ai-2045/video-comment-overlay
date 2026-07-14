@@ -113,6 +113,7 @@ fs.mkdirSync(distDir, { recursive: true });
 writePublicIndex(demoData, versionInfo);
 copyFile(path.join("src", "app.js"));
 copyFile(path.join("src", "styles.css"));
+copyFile(path.join("docs", "DATA_HANDOFF.md"));
 fs.mkdirSync(path.join(distDir, "data"), { recursive: true });
 fs.writeFileSync(path.join(distDir, "data", "thread-comments.json"), `${JSON.stringify(demoData, null, 2)}\n`, "utf8");
 fs.writeFileSync(path.join(distDir, "version.json"), `${JSON.stringify(versionInfo, null, 2)}\n`, "utf8");
@@ -149,6 +150,8 @@ fs.writeFileSync(
     "1. ZIPを展開します。",
     "2. `index.html` をブラウザで開きます。",
     "3. 必要ならYouTube URL、ローカル動画、コメントJSONを読み込みます。",
+    "4. Discord風の再現だけを見たい場合は、画面モードで `Discord再現` を選びます。",
+    "5. 録画したい場合は `画面録画開始` からブラウザの共有選択を使い、最後に `WebM保存` します。",
     "",
     "## ブラウザでローカルファイルが制限される場合",
     "",
@@ -165,6 +168,12 @@ fs.writeFileSync(
     "```",
     "",
     "起動後に `http://127.0.0.1:8765/` を開きます。",
+    "",
+    "## 実データを別で受け取った場合",
+    "",
+    "`コメントJSON` から別渡しのJSONを選びます。",
+    "元ログ、実参加者名、avatar URL、画像、添付はこのZIPには含めていません。",
+    "詳しくは `docs/DATA_HANDOFF.md` を参照してください。",
     "",
     "## 手動起動",
     "",
