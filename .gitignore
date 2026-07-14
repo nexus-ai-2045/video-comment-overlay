@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+*.tmp
+.env
+.env.*
+data/thread-comments*.json
+data/comments.sample.json
+!data/comments.public-demo.json
+!data/comments.list-test.json
