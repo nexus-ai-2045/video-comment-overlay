@@ -106,6 +106,8 @@ npm run start
 
 前面の `URLから取込` は、直接読めるJSON / NDJSON URLには対応します。YouTube Live、Twitch、Discordの通常の配信ページURLから履歴を直接取得する処理は、今後のサービス別アダプタ対象です。CORSや認証で取れない場合は、保存済みJSONを `ファイル取込` してください。
 
+一般ユーザーが自分のブラウザで開いているDiscord / YouTube Live / Twitchからコメントを取得する口は、Chrome拡張としてviewer本体から分ける方針です。viewer本体はローカルJSONの再生・調整・録画に集中し、取得拡張はユーザー操作で対象タブから読み取り、`video_comment_overlay.v1` JSONとprivate manifestを書き出します。詳細は [docs/CAPTURE_EXTENSION_PLAN.md](docs/CAPTURE_EXTENSION_PLAN.md) を参照してください。
+
 初期対象:
 
 | サービス | 入力候補 | 状態 |
