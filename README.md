@@ -18,6 +18,8 @@
 - YouTube iframe API が使える場合は動画の再生、停止、シークに同期する
 - 共有前レビュー用の匿名デモパッケージを生成する
 - Chrome拡張MVPで、表示中のDiscord / YouTube Live / TwitchコメントをJSON保存する
+- ZIPを展開し、Windows / macOS / Linuxの起動スクリプトでローカル実行する
+- GitHub Releasesを使って新しい配布版の有無を確認する
 
 ## すぐ試す
 
@@ -36,6 +38,10 @@ npm run start
 ```
 
 既定では `http://127.0.0.1:8765/` で開きます。
+
+配布ZIPには `start-windows.bat` と `start-mac-linux.sh` を含めます。ブラウザで直接 `index.html` を開けない場合でも、ZIPを展開したフォルダで起動スクリプトを実行すればローカルサーバーで開けます。
+
+起動スクリプトは、展開したフォルダを `http://127.0.0.1:8765/` で読むための一時HTTPサーバーを立ち上げます。これは自分のPC内で開くローカルサーバーで、インターネットへ公開するサーバーではありません。終了する時は、起動スクリプトを実行したターミナルを閉じるか、`Ctrl+C` で停止します。既に8765番ポートを使っているアプリがある場合は起動に失敗することがあります。
 
 ## コメントJSON形式
 
@@ -67,7 +73,7 @@ npm run start
 }
 ```
 
-`time` は動画開始からの秒数です。Discord raw NDJSONを読み込む場合は、画面上の「動画開始日時」を指定すると、Discordの `timestamp` との差分でタイムライン化します。
+`time` は動画開始からの秒数です。Discord raw NDJSONを読み込む場合は、画面上の「動画開始日時」を指定すると、Discordの `timestamp` との差分でタイムライン化します。Chrome拡張MVPのように `timeline.commentTimeMode` が `relative-visible-order` や `timestamp-diff` のJSONでは、画面上の「動画開始日時」を指定してから読み込むと、保存済みの表示順 `time` より `timestamp` 差分を優先して再計算します。
 
 ## 配信画面再現と録画
 
@@ -109,7 +115,7 @@ npm run start
 
 一般ユーザーが自分のブラウザで開いているDiscord / YouTube Live / Twitchからコメントを取得する口は、Chrome拡張としてviewer本体から分ける方針です。viewer本体はローカルJSONの再生・調整・録画に集中し、取得拡張はユーザー操作で対象タブから読み取り、`video_comment_overlay.v1` JSONとprivate manifestを書き出します。詳細は [docs/CAPTURE_EXTENSION_PLAN.md](docs/CAPTURE_EXTENSION_PLAN.md) を参照してください。
 
-初期MVPは [extensions/chrome-capture](extensions/chrome-capture) にあります。これは表示中DOMから見えている範囲だけを取得するため、出力は `visible-partial` として扱います。
+初期MVPは [extensions/chrome-capture](extensions/chrome-capture) にあります。これは表示中DOMから見えている範囲だけを取得するため、出力は `visible-partial` として扱います。保存前に取得結果の件数、先頭/末尾の時刻、プレビューを確認し、保存開始/終了番号を選んでからJSON保存します。導入手順は [docs/CHROME_EXTENSION_INSTALL.md](docs/CHROME_EXTENSION_INSTALL.md) にまとめています。
 
 初期対象:
 
@@ -127,6 +133,7 @@ npm run start
 npm run version:json
 npm run check
 npm run check:extension
+npm run validate:timeline -- path\to\comments.json --video-start 2026-07-14T21:00:00+09:00
 npm run verify
 npm run build:extension-zip
 npm run build:public-zip
@@ -138,6 +145,7 @@ npm run public:check
 | `npm run version:json` | package version、Git commit、branch、dirty状態をJSONで表示 |
 | `npm run check` | JavaScript構文チェック |
 | `npm run check:extension` | Chrome拡張MVPの権限と禁止APIを確認 |
+| `npm run validate:timeline -- path\to\comments.json` | コメント本文を出さずに件数、timestamp解析率、time範囲、開始日時ズレを確認 |
 | `npm run build:extension-zip` | Chrome拡張MVPのZIPを生成 |
 | `npm run build:public-zip` | 匿名デモの `dist/public-demo/` とZIPを生成 |
 | `npm run verify` | 構文、ZIP生成、private marker scanをまとめて実行 |
@@ -174,6 +182,8 @@ ZIPは匿名デモデータだけを同梱します。展開後は `index.html` 
 GitHubのsource ZIPにも private データやテストデータは含めない前提です。取得済みログを使った検証は、ローカルにだけ置いた `data/thread-comments.json` で行います。
 
 別渡しデータの作り方と受け渡し方は [docs/DATA_HANDOFF.md](docs/DATA_HANDOFF.md) を参照してください。
+
+アプリ右上の `更新確認` は、GitHub Releasesの最新リリースを見に行きます。新しい版がある場合はリリースページを開きます。repoがprivateの間、またはRelease未作成の間は、更新情報なしとして扱います。
 
 詳しくは [SHARE_REVIEW.md](SHARE_REVIEW.md) を参照してください。
 

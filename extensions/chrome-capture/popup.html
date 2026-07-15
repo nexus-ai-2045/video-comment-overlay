@@ -29,6 +29,22 @@
       </label>
 
       <button id="captureVisible" type="button">表示中コメントを取得</button>
+
+      <section id="rangePanel" class="range-panel" hidden>
+        <div class="range-grid">
+          <label>
+            保存開始
+            <input id="rangeStart" type="number" min="1" value="1">
+          </label>
+          <label>
+            保存終了
+            <input id="rangeEnd" type="number" min="1" value="1">
+          </label>
+        </div>
+        <div id="rangeSummary" class="range-summary">範囲未選択</div>
+        <ol id="previewList" class="preview-list"></ol>
+      </section>
+
       <button id="downloadJson" type="button" disabled>JSON保存</button>
 
       <section class="result-card" aria-live="polite">

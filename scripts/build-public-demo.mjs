@@ -125,8 +125,10 @@ copyFile("SECURITY.md");
 copyFile("PUBLIC_READY.md");
 copyFile("CHANGELOG.md");
 copyFile(path.join("docs", "DATA_HANDOFF.md"));
+copyFile(path.join("docs", "CHROME_EXTENSION_INSTALL.md"));
 copyFile(path.join("docs", "SOURCE_CAPTURE_ADAPTERS.md"));
 copyFile(path.join("docs", "PUBLICATION_INVENTORY.md"));
+copyDir(path.join("docs", "assets"));
 copyDir(path.join("extensions", "chrome-capture"));
 fs.mkdirSync(path.join(distDir, "data"), { recursive: true });
 fs.writeFileSync(path.join(distDir, "data", "thread-comments.json"), `${JSON.stringify(demoData, null, 2)}\n`, "utf8");
@@ -136,6 +138,7 @@ fs.writeFileSync(
   [
     "@echo off",
     "cd /d %~dp0",
+    "start \"\" powershell -NoProfile -WindowStyle Hidden -Command \"Start-Sleep -Milliseconds 800; Start-Process 'http://127.0.0.1:8765/'\"",
     "python -m http.server 8765",
     ""
   ].join("\r\n"),
@@ -146,6 +149,14 @@ fs.writeFileSync(
   [
     "#!/usr/bin/env sh",
     "cd \"$(dirname \"$0\")\"",
+    "(",
+    "  sleep 1",
+    "  if command -v open >/dev/null 2>&1; then",
+    "    open http://127.0.0.1:8765/",
+    "  elif command -v xdg-open >/dev/null 2>&1; then",
+    "    xdg-open http://127.0.0.1:8765/ >/dev/null 2>&1",
+    "  fi",
+    ") &",
     "python3 -m http.server 8765",
     ""
   ].join("\n"),
@@ -187,6 +198,11 @@ fs.writeFileSync(
     "```",
     "",
     "起動後に `http://127.0.0.1:8765/` を開きます。",
+    "この起動スクリプトは、展開したフォルダを読むための一時HTTPサーバーを自分のPC内に立ち上げます。",
+    "`127.0.0.1` はローカルPC自身を指すため、インターネットへ公開するサーバーではありません。",
+    "停止する時は、起動スクリプトを実行したターミナルを閉じるか、`Ctrl+C` を押します。",
+    "既に8765番ポートを使っているアプリがある場合は起動に失敗することがあります。",
+    "新しい配布版があるか確認する場合は、画面上部の `更新確認` を押します。GitHub Releasesに新しい版がある場合はリリースページを開きます。",
     "",
     "## 実データを別で受け取った場合",
     "",
@@ -200,6 +216,7 @@ fs.writeFileSync(
     "",
     "`extensions/chrome-capture/` をChromeのデベロッパーモードで読み込むと、表示中のDiscord / YouTube Live / TwitchコメントをJSON保存できます。",
     "このMVPは表示中DOMに存在する範囲だけを取得するため、出力は `visible-partial` として扱います。",
+    "入れ方と使い方は `docs/CHROME_EXTENSION_INSTALL.md` を参照してください。",
     "",
     "## 手動起動",
     "",
