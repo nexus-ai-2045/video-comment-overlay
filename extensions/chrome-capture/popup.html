@@ -30,6 +30,20 @@
 
       <button id="captureVisible" type="button">表示中コメントを取得</button>
 
+      <section id="discordPanel" class="discord-panel" hidden>
+        <div class="panel-title">
+          <strong>Discordキャプチャ</strong>
+          <span id="discordSessionStatus">未開始</span>
+        </div>
+        <div class="button-grid">
+          <button id="startDiscordLive" type="button">Live開始</button>
+          <button id="stopDiscordLive" type="button" class="secondary">停止</button>
+          <button id="backfillDiscord" type="button" class="secondary">過去へ1ステップ</button>
+          <button id="refreshDiscordSession" type="button" class="secondary">状態更新</button>
+        </div>
+        <p id="discordSessionNote">表示済み範囲を重複排除しながらローカル保存します。</p>
+      </section>
+
       <section id="rangePanel" class="range-panel" hidden>
         <div class="range-grid">
           <label>

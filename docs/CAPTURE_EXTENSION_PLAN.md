@@ -95,3 +95,28 @@ capture-package/
 ## 現在のMVP
 
 `extensions/chrome-capture/` にManifest V3拡張を追加済み。対象タブで見えているコメントDOMを読み、`video_comment_overlay.v1` JSONとしてローカル保存する。完全履歴ではなく `visible-partial` として扱う。
+
+## Discord capture engine v1
+
+Bot/APIが使えないDiscordスレッド向けに、content script常駐型の取得エンジンを追加する。
+
+### 採用する方針
+
+- popupは操作盤に限定し、取得状態はDiscordページ内のcontent scriptが保持する。
+- `MutationObserver` でLive中に追加表示されたメッセージを観測する。
+- `過去へ1ステップ` でDiscordのメッセージスクロール領域を少しずつ上へ戻し、到達済みDOMを追加取得する。
+- message id、なければ作者・本文・時刻で重複排除する。
+- 保存JSONには正規化済み `comments` に加えて、private検証用の `sourceRaw` とmanifestを含める。
+
+### 保証しないこと
+
+- Bot/APIなしでの完全履歴取得。
+- Discord UI変更後も同じセレクタで必ず動くこと。
+- 画面外でDOMに存在しないメッセージ、ログイン前履歴、閲覧権限外メッセージの取得。
+
+### 次の改善候補
+
+- Discordセレクタfixtureを追加し、UI変更時に壊れた箇所を検出する。
+- 添付、絵文字、スタンプ、返信引用を `sourceRaw` からより正確に正規化する。
+- popupではなくサイドパネル化し、長時間キャプチャ中の進捗を見やすくする。
+- 保存前プレビューで、時刻範囲による絞り込みを追加する。

@@ -3,6 +3,13 @@ const els = {
   platform: document.querySelector("#platform"),
   videoStartAt: document.querySelector("#videoStartAt"),
   captureVisible: document.querySelector("#captureVisible"),
+  discordPanel: document.querySelector("#discordPanel"),
+  startDiscordLive: document.querySelector("#startDiscordLive"),
+  stopDiscordLive: document.querySelector("#stopDiscordLive"),
+  backfillDiscord: document.querySelector("#backfillDiscord"),
+  refreshDiscordSession: document.querySelector("#refreshDiscordSession"),
+  discordSessionStatus: document.querySelector("#discordSessionStatus"),
+  discordSessionNote: document.querySelector("#discordSessionNote"),
   downloadJson: document.querySelector("#downloadJson"),
   rangePanel: document.querySelector("#rangePanel"),
   rangeStart: document.querySelector("#rangeStart"),
@@ -15,6 +22,7 @@ const els = {
 
 let activeTab = null;
 let latestCapture = null;
+let latestDiscordStatus = null;
 
 function setStatus(message) {
   els.status.textContent = message;
@@ -25,6 +33,15 @@ function detectPlatformFromUrl(url = "") {
   if (/youtube\.com/i.test(url)) return "youtube";
   if (/twitch\.tv/i.test(url)) return "twitch";
   return "auto";
+}
+
+function selectedPlatform() {
+  return els.platform.value || detectPlatformFromUrl(activeTab?.url || "");
+}
+
+function updatePlatformControls() {
+  const platform = selectedPlatform();
+  els.discordPanel.hidden = platform !== "discord";
 }
 
 function localDateTimeToIso(value) {
@@ -108,15 +125,64 @@ async function getActiveTab() {
   const platform = detectPlatformFromUrl(tab?.url || "");
   if (platform !== "auto") els.platform.value = platform;
   els.tabInfo.textContent = tab?.title || tab?.url || "対象タブなし";
+  updatePlatformControls();
 }
 
-async function captureVisibleComments() {
+async function ensureCaptureScript() {
   if (!activeTab?.id) await getActiveTab();
   if (!activeTab?.id) throw new Error("対象タブを取得できませんでした。");
   await chrome.scripting.executeScript({
     target: { tabId: activeTab.id },
     files: ["content-script.js"]
   });
+}
+
+async function runDiscordCommand(command, options = {}) {
+  await ensureCaptureScript();
+  const [{ result }] = await chrome.scripting.executeScript({
+    target: { tabId: activeTab.id },
+    func: (payload) => window.__VCO_CAPTURE__?.discordEngine(payload.command, payload.options),
+    args: [{ command, options }]
+  });
+  if (!result) throw new Error("Discordキャプチャエンジンを実行できませんでした。");
+  if (result.ok === false) throw new Error(result.error || "Discordキャプチャに失敗しました。");
+  if (command !== "export") {
+    latestDiscordStatus = result;
+    renderDiscordStatus(result);
+  }
+  return result;
+}
+
+function renderDiscordStatus(status = latestDiscordStatus) {
+  if (!status) {
+    els.discordSessionStatus.textContent = "未開始";
+    els.discordSessionNote.textContent = "表示済み範囲を重複排除しながらローカル保存します。";
+    return;
+  }
+  const modeLabel = status.observing ? "Live中" : status.mode === "backfill" ? "過去取得" : "待機";
+  els.discordSessionStatus.textContent = `${modeLabel} / ${status.total || 0}件`;
+  const range = status.firstTimestamp || status.lastTimestamp
+    ? `先頭 ${status.firstTimestamp || "不明"} / 末尾 ${status.lastTimestamp || "不明"}`
+    : "時刻は未取得または表示DOMから読めません。";
+  const last = status.lastScan ? `直近 +${status.lastScan.added}件 / 表示${status.lastScan.visibleCount}件` : "まだスキャンしていません。";
+  els.discordSessionNote.textContent = `${range} / ${last}${status.lastError ? ` / ${status.lastError}` : ""}`;
+}
+
+async function captureVisibleComments() {
+  await ensureCaptureScript();
+  if (selectedPlatform() === "discord") {
+    await runDiscordCommand("scan", { reason: "popup-visible-scan" });
+    const exported = await runDiscordCommand("export", {
+      videoStartAt: document.querySelector("#videoStartAt")?.value || ""
+    });
+    return {
+      ...exported,
+      timeline: {
+        ...exported.timeline,
+        videoStartAt: localDateTimeToIso(els.videoStartAt.value) || exported.timeline.videoStartAt
+      }
+    };
+  }
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId: activeTab.id },
     func: (options) => window.__VCO_CAPTURE__?.capture(options),
@@ -139,6 +205,24 @@ function filenameFor(data) {
   const source = data.source?.type || "comments";
   const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
   return `video-comment-overlay-${source}-${timestamp}.json`;
+}
+
+async function refreshDiscordSession() {
+  if (selectedPlatform() !== "discord") return;
+  try {
+    const status = await runDiscordCommand("status");
+    latestDiscordStatus = status;
+  } catch (error) {
+    renderDiscordStatus(null);
+    setStatus(error.message);
+  }
+}
+
+function setDiscordButtonsDisabled(disabled) {
+  els.startDiscordLive.disabled = disabled;
+  els.stopDiscordLive.disabled = disabled;
+  els.backfillDiscord.disabled = disabled;
+  els.refreshDiscordSession.disabled = disabled;
 }
 
 async function downloadLatest() {
@@ -177,11 +261,60 @@ els.captureVisible.addEventListener("click", async () => {
   }
 });
 
+els.startDiscordLive.addEventListener("click", async () => {
+  setDiscordButtonsDisabled(true);
+  setStatus("Discord Liveキャプチャを開始しています。");
+  try {
+    await runDiscordCommand("startLive");
+    setStatus("Liveキャプチャ中です。流れてくるコメントをページ内で観測します。");
+  } catch (error) {
+    setStatus(error.message);
+  } finally {
+    setDiscordButtonsDisabled(false);
+  }
+});
+
+els.stopDiscordLive.addEventListener("click", async () => {
+  setDiscordButtonsDisabled(true);
+  try {
+    await runDiscordCommand("stop");
+    setStatus("Liveキャプチャを停止しました。");
+  } catch (error) {
+    setStatus(error.message);
+  } finally {
+    setDiscordButtonsDisabled(false);
+  }
+});
+
+els.backfillDiscord.addEventListener("click", async () => {
+  setDiscordButtonsDisabled(true);
+  setStatus("過去方向へ1ステップ取得しています。");
+  try {
+    const status = await runDiscordCommand("backfillStep");
+    const reached = status.scroll?.reachedTop ? " 上端付近に到達しました。" : "";
+    setStatus(`過去方向の取得を実行しました。${reached}`);
+  } catch (error) {
+    setStatus(error.message);
+  } finally {
+    setDiscordButtonsDisabled(false);
+  }
+});
+
+els.refreshDiscordSession.addEventListener("click", () => {
+  refreshDiscordSession();
+});
+
 els.downloadJson.addEventListener("click", () => {
   downloadLatest().catch((error) => setStatus(`保存エラー: ${error.message}`));
 });
 
 els.rangeStart.addEventListener("input", renderPreview);
 els.rangeEnd.addEventListener("input", renderPreview);
+els.platform.addEventListener("change", () => {
+  updatePlatformControls();
+  refreshDiscordSession();
+});
 
-getActiveTab().catch((error) => setStatus(error.message));
+getActiveTab()
+  .then(() => refreshDiscordSession())
+  .catch((error) => setStatus(error.message));
