@@ -35,6 +35,18 @@ if ((manifest.permissions || []).includes("cookies")) {
 }
 
 const executableFiles = ["popup.js", "content-script.js"];
+const requiredContentScriptSnippets = [
+  "MutationObserver",
+  "discordEngine",
+  "backfillStep",
+  "sourceRaw"
+];
+const requiredPopupSnippets = [
+  "startDiscordLive",
+  "backfillDiscord",
+  "refreshDiscordSession",
+  "保存範囲を確認"
+];
 
 for (const file of executableFiles) {
   const fullPath = path.join(extensionDir, file);
@@ -45,6 +57,21 @@ for (const file of executableFiles) {
       process.exit(1);
     }
   }
+}
+
+const contentScript = fs.readFileSync(path.join(extensionDir, "content-script.js"), "utf8");
+const popupScript = fs.readFileSync(path.join(extensionDir, "popup.js"), "utf8");
+const missingContentSnippets = requiredContentScriptSnippets.filter((snippet) => !contentScript.includes(snippet));
+const missingPopupSnippets = requiredPopupSnippets.filter((snippet) => !popupScript.includes(snippet));
+
+if (missingContentSnippets.length) {
+  console.error(`content-script.js: missing Discord engine snippets: ${missingContentSnippets.join(", ")}`);
+  process.exit(1);
+}
+
+if (missingPopupSnippets.length) {
+  console.error(`popup.js: missing capture workflow snippets: ${missingPopupSnippets.join(", ")}`);
+  process.exit(1);
 }
 
 console.log(JSON.stringify({
