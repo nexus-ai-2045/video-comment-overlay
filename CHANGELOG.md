@@ -2,6 +2,15 @@
 
 このプロジェクトは、リリース単位で `package.json` の `version` を更新します。配布ZIPには、ビルド時点のGit commit、branch、dirty状態を `version.json` と画面表示へ埋め込みます。
 
+## 0.1.1 - public前の配布導線調整
+
+- Chrome拡張の保存前プレビューと保存範囲指定を追加。
+- timestampと動画開始日時からコメントtimeを再計算し、開始前コメントを除外できるように変更。
+- コメント本文を出さずに時間軸を検査する `npm run validate:timeline` を追加。
+- ZIP起動スクリプトが一時HTTPサーバーを立てることをREADMEと配布READMEに明記。
+- GitHub Releasesを使う `更新確認` ボタンを追加。
+- Chrome拡張導入ガイドとスクショを追加。
+
 ## 0.1.0 - public-ready MVP候補
 
 - 静的viewerで動画同期コメントオーバーレイを表示。

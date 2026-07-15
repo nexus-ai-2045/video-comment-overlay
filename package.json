@@ -1,6 +1,6 @@
 {
   "name": "video-comment-overlay",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "動画にDiscord風、LINE風、ニコ動風コメントを同期表示するローカルファーストな静的ビューア。",
   "scripts": {
