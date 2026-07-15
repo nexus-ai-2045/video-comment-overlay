@@ -11,7 +11,7 @@ public化に向けた土台はかなり揃っています。PR #1はmerge済み�
 | 項目 | 状態 | 根拠 |
 |---|---|---|
 | ライセンス | MIT追加済み | `LICENSE`, `package.json` |
-| バージョン管理 | 0.1.0 + Git metadata | `scripts/version-info.mjs`, `version.json`生成 |
+| バージョン管理 | 0.1.1 + Git metadata | `scripts/version-info.mjs`, `version.json`生成 |
 | 変更履歴 | 追加済み | `CHANGELOG.md` |
 | セキュリティ方針 | 追加済み | `SECURITY.md` |
 | 公開前チェック | 追加済み | `PUBLIC_READY.md`, `npm run public:check` |

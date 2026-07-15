@@ -189,7 +189,7 @@ GitHubのsource ZIPにも private データやテストデータは含めない�
 
 ## バージョン管理
 
-アプリの表示バージョンはGitから自動生成します。初期public-ready MVPのパッケージバージョンは `0.1.0` です。
+アプリの表示バージョンはGitから自動生成します。初期public-ready MVPのパッケージバージョンは `0.1.1` です。
 
 - 通常のソース起動では `src/version.js` の静的フォールバックを表示します。
 - `npm run build:public-zip` では、その時点のGit commit / branch / dirty状態を `dist/public-demo/version.json` とHTML内の `window.VCO_VERSION` に埋め込みます。
