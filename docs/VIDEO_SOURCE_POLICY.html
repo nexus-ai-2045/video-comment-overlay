@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Video Comment Overlay 方針整理</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #101217;
+        --panel: #191d25;
+        --panel-2: #202632;
+        --line: #394150;
+        --text: #f4f7fb;
+        --muted: #aab3c2;
+        --soft: #d9e1ee;
+        --discord: #5865f2;
+        --twitch: #9146ff;
+        --youtube: #ff3d3d;
+        --local: #44c7a8;
+        --warn: #f2bd5c;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px) 0 0 / 48px 48px,
+          linear-gradient(0deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px) 0 0 / 48px 48px,
+          var(--bg);
+        color: var(--text);
+        font-family: "Yu Gothic UI", "Meiryo", "Segoe UI", sans-serif;
+        line-height: 1.65;
+      }
+
+      main {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 40px 0 56px;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+        gap: 24px;
+        align-items: stretch;
+        min-height: 360px;
+      }
+
+      .hero-copy,
+      .signal-board,
+      .section,
+      .callout {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(25, 29, 37, 0.9);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+      }
+
+      .hero-copy {
+        display: grid;
+        align-content: center;
+        gap: 20px;
+        padding: clamp(24px, 4vw, 44px);
+      }
+
+      .eyebrow {
+        width: fit-content;
+        border: 1px solid rgba(68, 199, 168, 0.65);
+        border-radius: 999px;
+        padding: 4px 10px;
+        color: #a9ffe8;
+        font-family: "Consolas", "Cascadia Mono", monospace;
+        font-size: 12px;
+        letter-spacing: 0;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        max-width: 760px;
+        font-size: clamp(34px, 5vw, 64px);
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: clamp(22px, 3vw, 32px);
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+
+      h3 {
+        font-size: 16px;
+        line-height: 1.35;
+      }
+
+      .lead {
+        max-width: 760px;
+        color: var(--soft);
+        font-size: 17px;
+      }
+
+      .signal-board {
+        display: grid;
+        gap: 14px;
+        align-content: center;
+        padding: 22px;
+        background:
+          linear-gradient(135deg, rgba(88, 101, 242, 0.14), transparent 42%),
+          var(--panel);
+      }
+
+      .meter {
+        display: grid;
+        gap: 8px;
+      }
+
+      .meter-line {
+        display: grid;
+        grid-template-columns: 100px 1fr 76px;
+        gap: 10px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .track {
+        height: 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #2c3340;
+      }
+
+      .fill {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+      }
+
+      .fill.local { width: 95%; background: var(--local); }
+      .fill.twitch { width: 72%; background: var(--twitch); }
+      .fill.youtube { width: 50%; background: var(--youtube); }
+      .fill.discord { width: 34%; background: var(--discord); }
+
+      .board-note {
+        border-top: 1px solid var(--line);
+        padding-top: 14px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .sections {
+        display: grid;
+        gap: 22px;
+        margin-top: 24px;
+      }
+
+      .section {
+        display: grid;
+        gap: 18px;
+        padding: clamp(20px, 3vw, 30px);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .card {
+        min-height: 180px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+        background: var(--panel-2);
+      }
+
+      .card h3 {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .tag {
+        border-radius: 999px;
+        padding: 3px 8px;
+        color: #fff;
+        font-family: "Consolas", "Cascadia Mono", monospace;
+        font-size: 11px;
+        white-space: nowrap;
+      }
+
+      .tag.youtube { background: var(--youtube); }
+      .tag.twitch { background: var(--twitch); }
+      .tag.discord { background: var(--discord); }
+      .tag.local { background: var(--local); color: #05281f; }
+      .tag.warn { background: var(--warn); color: #211503; }
+
+      .card p,
+      .path p,
+      .callout p {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .decision-table {
+        width: 100%;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      table {
+        width: 100%;
+        min-width: 760px;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 14px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--soft);
+        background: #171b22;
+        font-size: 13px;
+      }
+
+      td {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .workflow {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .path {
+        position: relative;
+        min-height: 150px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        background: #151922;
+      }
+
+      .path::after {
+        content: "";
+        position: absolute;
+        top: 26px;
+        right: -10px;
+        width: 10px;
+        height: 1px;
+        background: var(--line);
+      }
+
+      .path:last-child::after {
+        display: none;
+      }
+
+      .path strong {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text);
+        font-size: 14px;
+      }
+
+      .callout {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 16px;
+        align-items: center;
+        padding: 18px 20px;
+        border-color: rgba(242, 189, 92, 0.58);
+        background: rgba(242, 189, 92, 0.08);
+      }
+
+      .callout strong {
+        color: #ffe0a0;
+      }
+
+      code {
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 2px 6px;
+        background: #11151c;
+        color: #dce7ff;
+        font-family: "Consolas", "Cascadia Mono", monospace;
+        font-size: 0.92em;
+      }
+
+      .footer-note {
+        margin-top: 22px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 900px) {
+        .hero,
+        .grid,
+        .workflow,
+        .callout {
+          grid-template-columns: 1fr;
+        }
+
+        .path::after {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero" aria-labelledby="title">
+        <div class="hero-copy">
+          <span class="eyebrow">Video Comment Overlay / policy board</span>
+          <h1 id="title">動画を抜くツールではなく、素材を同期して再現する編集卓。</h1>
+          <p class="lead">
+            YouTube、Twitch、Discordで扱いが違う動画保存の論点を分け、ユーザーが用意した動画とコメントJSONを同期し、必要ならWebMで録画する方針に整理する。
+          </p>
+        </div>
+
+        <aside class="signal-board" aria-label="安全度の目安">
+          <h2>安全な素材導線</h2>
+          <div class="meter">
+            <div class="meter-line"><span>ローカル動画</span><span class="track"><span class="fill local"></span></span><span>最優先</span></div>
+            <div class="meter-line"><span>Twitch本人VOD</span><span class="track"><span class="fill twitch"></span></span><span>公式DL</span></div>
+            <div class="meter-line"><span>YouTube URL</span><span class="track"><span class="fill youtube"></span></span><span>埋め込み</span></div>
+            <div class="meter-line"><span>Discord配信</span><span class="track"><span class="fill discord"></span></span><span>録画前提</span></div>
+          </div>
+          <p class="board-note">
+            方針は「動画URLから汎用DL」ではなく「権利ある素材を読み込む」。DiscordはOBS等で視聴中に録画する。
+          </p>
+        </aside>
+      </section>
+
+      <div class="sections">
+        <section class="section" aria-labelledby="service-title">
+          <h2 id="service-title">サービス別の判断</h2>
+          <div class="grid">
+            <article class="card">
+              <h3>YouTube <span class="tag youtube">URL</span></h3>
+              <p>公開動画の汎用DL機能は入れない。アプリでは埋め込み再生を中心にし、ユーザーが権利を持つローカル動画を読み込めるようにする。</p>
+            </article>
+            <article class="card">
+              <h3>Twitch <span class="tag twitch">VOD</span></h3>
+              <p>自分のVOD/Clipは公式DL済みファイルを読み込む。第三者VODやLiveをURLから自動DLする導線は避ける。</p>
+            </article>
+            <article class="card">
+              <h3>Discord <span class="tag discord">REC</span></h3>
+              <p>Go Liveや画面共有は後から公式DLできる前提ではない。OBSなどで視聴中に録画した動画を素材にする。</p>
+            </article>
+            <article class="card">
+              <h3>WebM <span class="tag local">OUTPUT</span></h3>
+              <p>ブラウザ録画はWebM保存が本命。編集や投稿向けにはMP4変換導線を追加する。</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="table-title">
+          <h2 id="table-title">実装に入れるもの / 入れないもの</h2>
+          <div class="decision-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>機能</th>
+                  <th>判断</th>
+                  <th>理由</th>
+                  <th>UI文言</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>ローカル動画読み込み</td>
+                  <td><span class="tag local">採用</span></td>
+                  <td>権利・保存場所・再現性が一番明確。</td>
+                  <td>動画ファイルを選ぶ</td>
+                </tr>
+                <tr>
+                  <td>YouTube URL再生</td>
+                  <td><span class="tag local">採用</span></td>
+                  <td>DLせず埋め込み/再生に寄せられる。</td>
+                  <td>YouTube URLで再生</td>
+                </tr>
+                <tr>
+                  <td>Discordコメント取得</td>
+                  <td><span class="tag local">採用</span></td>
+                  <td>Chrome拡張で表示DOMをユーザー操作で取得。完全履歴は保証しない。</td>
+                  <td>表示中コメントを取得</td>
+                </tr>
+                <tr>
+                  <td>WebM録画</td>
+                  <td><span class="tag local">採用</span></td>
+                  <td>ブラウザ標準のMediaRecorderと相性が良い。</td>
+                  <td>録画を開始</td>
+                </tr>
+                <tr>
+                  <td>WebMからMP4変換</td>
+                  <td><span class="tag warn">段階採用</span></td>
+                  <td>まずはffmpeg/HandBrake手順表示。Electron化するなら変換ボタンを強化。</td>
+                  <td>MP4へ変換する</td>
+                </tr>
+                <tr>
+                  <td>YouTube/Twitch汎用動画DL</td>
+                  <td><span class="tag warn">非採用</span></td>
+                  <td>規約・権利・配布責任が重い。公式DL済み素材の読み込みに寄せる。</td>
+                  <td>表示しない</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="flow-title">
+          <h2 id="flow-title">ユーザーの作業フロー</h2>
+          <div class="workflow">
+            <div class="path">
+              <strong>1. 動画を用意</strong>
+              <p>ローカル動画、OBS録画、Twitch公式DL済みVOD、またはYouTube URLを使う。</p>
+            </div>
+            <div class="path">
+              <strong>2. コメントを用意</strong>
+              <p>JSONを読み込む。DiscordはChrome拡張で表示中DOMを取得する。</p>
+            </div>
+            <div class="path">
+              <strong>3. 表示を選ぶ</strong>
+              <p>Discord風、Twitch風、YouTube風、LINE風、ニコ動風を切り替える。</p>
+            </div>
+            <div class="path">
+              <strong>4. 同期を調整</strong>
+              <p>動画開始時刻、コメント範囲、表示密度、色、速度を微調整する。</p>
+            </div>
+            <div class="path">
+              <strong>5. 保存する</strong>
+              <p>合成結果をWebMで録画。必要に応じてMP4変換の導線を使う。</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="callout" aria-label="短い結論">
+          <div>
+            <strong>短い結論</strong>
+            <p>
+              動画は「抜く」のではなく「持ち込む」。コメントは「見えている範囲を正直に取得」。出力は <code>WebM</code> を基本にし、必要な人へ <code>MP4</code> 変換を案内する。
+            </p>
+          </div>
+          <span class="tag local">SSOT候補</span>
+        </section>
+      </div>
+
+      <p class="footer-note">
+        ローカル確認用資料。公開・告知・配布の前には、README、license、secret scan、personal path scan、生成ZIPの目視確認が必要。
+      </p>
+    </main>
+  </body>
+</html>
