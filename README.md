@@ -215,6 +215,29 @@ git status --short
 
 実Discordログの取得状況はローカルprivateデータとして扱います。repoと配布ZIPには、実URL、実ID、実参加者名、元本文、avatar URL、添付を含めません。
 
+## public化前の残務
+
+2026-07-15時点で、PR #1、PR #2、PR #3はmainへmerge済みです。`package.json` は `0.1.1` で、main上の `npm run public:check` は成功しています。
+
+public化前に残っている作業:
+
+| 優先度 | 残務 | 状態 |
+|---|---|---|
+| 高 | Chrome拡張をDiscord / YouTube Live / Twitchの3サイトで手動確認 | 未完了 |
+| 高 | README、LICENSE、SECURITY.md、PUBLIC_READY.md、CHANGELOG.mdの最終目視 | 未完了 |
+| 高 | source filesとcommit historyがWeb上に見えることの人間確認 | 未完了 |
+| 高 | GitHub repository visibility変更の明示承認 | 未承認 |
+| 中 | public化後にGitHub Release `v0.1.1` と配布ZIPを作る | 未実施 |
+| 中 | GitHub About / topicsを整える | 任意 |
+
+visibility変更を行う場合の対象と操作:
+
+```powershell
+gh repo edit nexus-ai-2045/video-comment-overlay --visibility public
+```
+
+この操作は、対象repo、見える範囲、確認済み項目を現在会話で明示し、ユーザーの明確なyesを受けるまで実行しません。
+
 ## 公開境界
 
 このリポジトリは private 前提です。公開、外部共有、デプロイ、GitHub visibility 変更は、人間レビューと現在会話での明示承認なしに行いません。
