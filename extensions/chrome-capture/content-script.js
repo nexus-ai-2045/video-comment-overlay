@@ -44,6 +44,18 @@
     });
   }
 
+  function parseTimestampMs(timestamp) {
+    if (!timestamp) return Number.NaN;
+    const parsed = Date.parse(timestamp);
+    return Number.isFinite(parsed) ? parsed : Number.NaN;
+  }
+
+  function parseVideoStartMs(videoStartAt) {
+    if (!videoStartAt) return Number.NaN;
+    const parsed = Date.parse(videoStartAt);
+    return Number.isFinite(parsed) ? parsed : Number.NaN;
+  }
+
   function captureDiscord() {
     const nodes = [
       ...document.querySelectorAll('[id^="chat-messages-"], [data-list-item-id*="chat-messages"], li[class*="messageListItem"]')
@@ -108,6 +120,8 @@
 
   function normalizeRows(rows, platform, videoStartAt) {
     const participants = {};
+    const videoStartMs = parseVideoStartMs(videoStartAt);
+    let timestampTimeCount = 0;
     const comments = rows.map((row, index) => {
       const authorName = row.authorName || "unknown";
       const authorId = `visible-user-${authorName.toLowerCase().replace(/\s+/g, "-") || index + 1}`;
@@ -118,11 +132,17 @@
           avatarUrl: row.avatarUrl || ""
         };
       }
+      const timestampMs = parseTimestampMs(row.timestamp);
+      const time =
+        Number.isFinite(timestampMs) && Number.isFinite(videoStartMs)
+          ? Math.max(0, (timestampMs - videoStartMs) / 1000)
+          : index * 2;
+      if (Number.isFinite(timestampMs) && Number.isFinite(videoStartMs)) timestampTimeCount += 1;
       return {
         id: row.id || `visible-comment-${index + 1}`,
         authorId,
         authorName,
-        time: index * 2,
+        time,
         timestamp: row.timestamp || "",
         text: row.text,
         kind: "message",
@@ -142,7 +162,7 @@
       },
       timeline: {
         videoStartAt: videoStartAt || new Date().toISOString(),
-        commentTimeMode: "relative-visible-order"
+        commentTimeMode: timestampTimeCount ? "timestamp-diff" : "relative-visible-order"
       },
       participants,
       comments,
@@ -150,7 +170,12 @@
         coverage: "partial",
         messageCount: comments.length,
         participantCount: Object.keys(participants).length,
-        blockers: comments.length ? [] : ["visible_comment_nodes_not_found"],
+        timestampTimeCount,
+        blockers: comments.length
+          ? timestampTimeCount || !videoStartAt
+            ? []
+            : ["timestamp_not_parseable_from_visible_dom"]
+          : ["visible_comment_nodes_not_found"],
         note: "このMVPは表示中DOMから見えている範囲だけを取得します。完全履歴は保証しません。"
       }
     };

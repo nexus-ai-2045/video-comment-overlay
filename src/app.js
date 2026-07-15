@@ -62,6 +62,7 @@ const els = {
   recordingStatus: document.querySelector("#recordingStatus"),
   status: document.querySelector("#status"),
   versionBadge: document.querySelector("#versionBadge"),
+  checkUpdates: document.querySelector("#checkUpdates"),
   videoHost: document.querySelector("#videoHost"),
   localVideo: document.querySelector("#localVideo"),
   youtubeFrame: document.querySelector("#youtubeFrame"),
@@ -81,6 +82,12 @@ const els = {
   editText: document.querySelector("#editText"),
   editHidden: document.querySelector("#editHidden"),
   clearCommentEdit: document.querySelector("#clearCommentEdit")
+};
+
+const updateConfig = {
+  owner: "nexus-ai-2045",
+  repo: "video-comment-overlay",
+  latestReleaseUrl: "https://api.github.com/repos/nexus-ai-2045/video-comment-overlay/releases/latest"
 };
 
 const builtinPresets = {
@@ -290,24 +297,70 @@ function downloadJson(filename, data) {
   URL.revokeObjectURL(link.href);
 }
 
+function parseTimestampMs(timestamp) {
+  if (!timestamp) return Number.NaN;
+  const parsed = Date.parse(timestamp);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
+function resolveVideoStartIso(data) {
+  return localDateTimeToIso(els.videoStartAt.value) || data.timeline?.videoStartAt || "";
+}
+
+function isBeforeVideoStart(timestampMs, videoStartMs) {
+  return Number.isFinite(timestampMs) && Number.isFinite(videoStartMs) && timestampMs < videoStartMs;
+}
+
 function normalizeData(data) {
   const participants = data.participants || {};
-  const videoStart = data.timeline?.videoStartAt ? Date.parse(data.timeline.videoStartAt) : null;
-  const comments = (data.comments || []).map((comment, index) => {
+  const videoStartIso = resolveVideoStartIso(data);
+  const videoStart = videoStartIso ? Date.parse(videoStartIso) : null;
+  const shouldPreferTimestamp =
+    data.timeline?.commentTimeMode && data.timeline.commentTimeMode !== "absolute";
+  let skippedBeforeVideoStart = 0;
+  const comments = (data.comments || []).flatMap((comment, index) => {
     const participant = participants[comment.authorId] || {};
+    const timestampMs = parseTimestampMs(comment.timestamp);
+    if (shouldPreferTimestamp && isBeforeVideoStart(timestampMs, videoStart)) {
+      skippedBeforeVideoStart += 1;
+      return [];
+    }
     const timestampTime =
-      comment.timestamp && videoStart ? Math.max(0, (Date.parse(comment.timestamp) - videoStart) / 1000) : null;
+      Number.isFinite(timestampMs) && Number.isFinite(videoStart)
+        ? Math.max(0, (timestampMs - videoStart) / 1000)
+        : null;
+    const existingTime = Number(comment.time);
+    const normalizedTime =
+      shouldPreferTimestamp && timestampTime !== null
+        ? timestampTime
+        : Number.isFinite(existingTime)
+          ? existingTime
+          : timestampTime || 0;
     return {
       ...comment,
       id: String(comment.id || `comment-${index}`),
       authorName: comment.authorName || participant.name || "unknown",
-      time: Number.isFinite(Number(comment.time)) ? Number(comment.time) : timestampTime || 0,
+      time: normalizedTime,
       color: comment.color || participant.color || colorFromString(comment.authorId || comment.authorName || `${index}`),
       avatarUrl: comment.avatarUrl || participant.avatarUrl || ""
     };
   });
   comments.sort((a, b) => a.time - b.time);
-  return { ...data, comments };
+  return {
+    ...data,
+    timeline: {
+      ...data.timeline,
+      videoStartAt: videoStartIso || data.timeline?.videoStartAt,
+      normalizedAt: new Date().toISOString()
+    },
+    manifest: {
+      ...data.manifest,
+      originalMessageCount: data.manifest?.originalMessageCount || data.comments?.length || comments.length,
+      messageCount: comments.length,
+      skippedBeforeVideoStart
+    },
+    comments
+  };
 }
 
 function localDateTimeToIso(value) {
@@ -346,7 +399,9 @@ async function loadDiscordNdjson(file) {
     .map((line) => JSON.parse(line));
   const videoStartIso = localDateTimeToIso(els.videoStartAt.value) || rows[0]?.timestamp || new Date().toISOString();
   const videoStartMs = Date.parse(videoStartIso);
-  const comments = rows.map((row, index) => normalizeDiscordMessage(row, index, videoStartMs));
+  const comments = rows
+    .filter((row) => !isBeforeVideoStart(parseTimestampMs(row.timestamp), videoStartMs))
+    .map((row, index) => normalizeDiscordMessage(row, index, videoStartMs));
   const participants = {};
   for (const comment of comments) {
     if (!participants[comment.authorId]) {
@@ -409,7 +464,9 @@ function normalizeImportedSourceData(data, platform, importedFrom = "") {
   const rows = Array.isArray(data) ? data : data.comments || data.items || data.messages || [];
   const videoStartIso = localDateTimeToIso(els.videoStartAt.value) || inferFirstTimestamp(rows) || new Date().toISOString();
   const videoStartMs = Date.parse(videoStartIso);
-  const comments = rows.map((row, index) => normalizeSourceMessage(row, index, platform, videoStartMs));
+  const comments = rows
+    .filter((row) => !isBeforeVideoStart(parseTimestampMs(inferRowTimestamp(row)), videoStartMs))
+    .map((row, index) => normalizeSourceMessage(row, index, platform, videoStartMs));
   const participants = {};
   for (const comment of comments) {
     if (!participants[comment.authorId]) {
@@ -510,16 +567,22 @@ function normalizeGenericMessage(row, index, platform, videoStartMs) {
 
 function inferFirstTimestamp(rows) {
   for (const row of rows || []) {
-    const timestamp =
-      row.timestamp ||
-      row.createdAt ||
-      row.created_at ||
-      row.publishedAt ||
-      row.snippet?.publishedAt ||
-      row.snippet?.timestamp;
+    const timestamp = inferRowTimestamp(row);
     if (timestamp && Number.isFinite(Date.parse(timestamp))) return new Date(Date.parse(timestamp)).toISOString();
   }
   return "";
+}
+
+function inferRowTimestamp(row) {
+  return (
+    row?.timestamp ||
+    row?.createdAt ||
+    row?.created_at ||
+    row?.publishedAt ||
+    row?.snippet?.publishedAt ||
+    row?.snippet?.timestamp ||
+    ""
+  );
 }
 
 function colorFromString(value) {
@@ -555,6 +618,59 @@ function renderVersionBadge() {
     version.commit ? `commit: ${version.commit}` : "commit: none",
     `source: ${version.source}`
   ].join("\n");
+}
+
+function versionParts(value) {
+  return String(value || "0.0.0")
+    .replace(/^v/i, "")
+    .split(/[.-]/)
+    .slice(0, 3)
+    .map((part) => Number.parseInt(part, 10) || 0);
+}
+
+function compareVersions(left, right) {
+  const a = versionParts(left);
+  const b = versionParts(right);
+  for (let index = 0; index < 3; index += 1) {
+    if (a[index] > b[index]) return 1;
+    if (a[index] < b[index]) return -1;
+  }
+  return 0;
+}
+
+function currentPackageVersion() {
+  return window.VCO_VERSION?.packageVersion || "0.0.0";
+}
+
+async function checkForUpdates() {
+  if (!els.checkUpdates) return;
+  els.checkUpdates.disabled = true;
+  setStatus("GitHub Releasesで更新を確認しています。", 3000);
+  try {
+    const response = await fetch(updateConfig.latestReleaseUrl, {
+      headers: { Accept: "application/vnd.github+json" },
+      cache: "no-store"
+    });
+    if (response.status === 404) {
+      setStatus("更新情報はまだ公開されていません。GitHub Releases作成後に検知できます。", 7000);
+      return;
+    }
+    if (!response.ok) throw new Error(`GitHub Releases HTTP ${response.status}`);
+    const release = await response.json();
+    const latest = String(release.tag_name || release.name || "").replace(/^v/i, "");
+    if (!latest) throw new Error("最新バージョンを読み取れませんでした。");
+    const current = currentPackageVersion();
+    if (compareVersions(latest, current) > 0) {
+      setStatus(`新しい版 ${latest} があります。リリースページを開きます。`, 7000);
+      if (release.html_url) window.open(release.html_url, "_blank", "noopener,noreferrer");
+    } else {
+      setStatus(`最新版です: ${current}`, 5000);
+    }
+  } catch (error) {
+    setStatus(`更新確認に失敗しました: ${error.message}`, 7000);
+  } finally {
+    els.checkUpdates.disabled = false;
+  }
 }
 
 function updateTransportLabel() {
@@ -1224,6 +1340,7 @@ function loadLocalVideo(file) {
 
 function bindEvents() {
   els.loadYoutube.addEventListener("click", loadYoutube);
+  els.checkUpdates?.addEventListener("click", () => checkForUpdates());
   els.toggleSettings.addEventListener("click", () => setSettingsOpen(els.appShell.dataset.settingsOpen !== "true"));
   els.closeSettings.addEventListener("click", () => setSettingsOpen(false));
   els.quickPlatform.addEventListener("change", () => setPlatform(els.quickPlatform.value));
