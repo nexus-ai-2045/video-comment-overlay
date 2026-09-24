@@ -9,7 +9,7 @@
 ## 現在できていること
 
 - `npm run verify` が成功する。
-- `node scripts/scan-private-markers.mjs dist/public-demo` が成功する。
+- markerを設定した状態で `node scripts/scan-private-markers.mjs dist/public-demo` が成功する（markerが未設定だとscanはskipされ `WARNING: private marker scan skipped` を表示して成功扱いになる。実際の公開前確認では `.private-markers.txt` か `PRIVATE_MARKERS` でmarkerを設定し、`PRIVATE_MARKERS_REQUIRED=1` を付けて実行する）。
 - 匿名デモZIPを生成できる。
 - Chrome拡張MVPを検証し、ZIP化できる。
 - ZIP展開後、`start-windows.bat` / `start-mac-linux.sh` で一時HTTPサーバーを起動して試せる。
@@ -36,12 +36,15 @@
 ## 公開前に実行するコマンド
 
 ```powershell
+$env:PRIVATE_MARKERS_REQUIRED = "1"   # marker未設定ならskipではなく失敗させる
 npm run verify
 node scripts/scan-private-markers.mjs dist/public-demo
 npm run build:extension-zip
 npm run public:check
 git status --short --ignored
 ```
+
+private marker scanは `.private-markers.txt` (repo直下、gitignore済み) か環境変数 `PRIVATE_MARKERS` のmarkerを使います。markerが未設定の場合は `WARNING: private marker scan skipped` を表示してexit 0になり、実際の検査は行われません。公開前・共有前の確認ではmarkerを設定し、`PRIVATE_MARKERS_REQUIRED=1` で実行してください。詳しくはREADMEの「private marker scan」を参照してください。
 
 必要に応じてsource archive相当のスキャンも行います。
 

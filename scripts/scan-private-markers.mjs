@@ -2,52 +2,20 @@ import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { loadPrivateMarkers } from "./private-markers.mjs";
 
-// Private markers are never stored in this repository.
-// Sources (merged, de-duplicated):
-//   1. PRIVATE_MARKERS env var: one marker per line.
-//   2. PRIVATE_MARKERS_FILE env var: path to a marker file.
-//      Default: .private-markers.txt in the current directory (gitignored).
-// Marker files hold one marker per line; blank lines and lines starting with "#" are ignored.
-// With no markers configured the scan is skipped with exit 0, unless
+// Private markers are never stored in this repository; see scripts/private-markers.mjs for sources.
+// With no markers configured the scan is skipped with a WARNING and exit 0, unless
 // --require-markers or PRIVATE_MARKERS_REQUIRED=1 is set (then exit 2).
+// A marker file that is tracked or not gitignored is an error (exit 2).
 // Hits are reported as file:line plus marker index and sha256 prefix; marker values are never printed.
 
-const DEFAULT_MARKERS_FILE = ".private-markers.txt";
 const ignoredDirs = new Set([".git", "node_modules"]);
 const textExtensions = new Set([".bat", ".css", ".html", ".js", ".json", ".md", ".mjs", ".ps1", ".sh", ".txt", ".yml", ".yaml"]);
 const args = process.argv.slice(2);
 const trackedOnly = args.includes("--tracked");
 const requireMarkers = args.includes("--require-markers") || process.env.PRIVATE_MARKERS_REQUIRED === "1";
 const roots = args.filter((arg) => !arg.startsWith("--"));
-
-function parseMarkers(text) {
-  return text
-    .replace(/^﻿/, "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith("#"));
-}
-
-function loadMarkers() {
-  const sources = [];
-  const markers = [];
-  const envValue = process.env.PRIVATE_MARKERS;
-  if (envValue && envValue.trim()) {
-    markers.push(...parseMarkers(envValue));
-    sources.push("env:PRIVATE_MARKERS");
-  }
-  const explicitFile = process.env.PRIVATE_MARKERS_FILE;
-  const markersFile = path.resolve(explicitFile || DEFAULT_MARKERS_FILE);
-  if (fs.existsSync(markersFile)) {
-    markers.push(...parseMarkers(fs.readFileSync(markersFile, "utf8")));
-    sources.push(explicitFile ? "env:PRIVATE_MARKERS_FILE" : DEFAULT_MARKERS_FILE);
-  } else if (explicitFile) {
-    console.error("PRIVATE_MARKERS_FILE is set but the file does not exist.");
-    process.exit(2);
-  }
-  return { markers: [...new Set(markers)], sources, markersFile };
-}
 
 function markerId(marker, index) {
   const hash = crypto.createHash("sha256").update(marker, "utf8").digest("hex").slice(0, 12);
@@ -72,19 +40,25 @@ function walk(target) {
   });
 }
 
-const { markers, sources, markersFile } = loadMarkers();
+const { markers, sources, markersFile, error } = loadPrivateMarkers();
+
+if (error) {
+  console.error(`ERROR: ${error}`);
+  process.exit(2);
+}
 
 if (!markers.length) {
-  const notice = "No private markers configured (PRIVATE_MARKERS / PRIVATE_MARKERS_FILE / .private-markers.txt); private marker scan skipped.";
+  const notice = "private marker scan skipped: no private markers configured (PRIVATE_MARKERS / PRIVATE_MARKERS_FILE / .private-markers.txt at the repo root).";
   if (requireMarkers) {
-    console.error(`${notice} Failing because markers are required.`);
+    console.error(`ERROR: ${notice} Failing because markers are required.`);
     process.exit(2);
   }
-  console.error(notice);
+  console.error(`WARNING: ${notice}`);
   console.log(JSON.stringify({ ok: true, skipped: true, reason: "no private markers configured", trackedOnly }, null, 2));
   process.exit(0);
 }
 
+// The marker file is only exempt here because loadPrivateMarkers verified it is untracked and gitignored.
 const files = (trackedOnly ? gitTrackedFiles() : (roots.length ? roots : ["."]).flatMap(walk))
   .filter((file) => path.resolve(file) !== markersFile);
 const hits = [];

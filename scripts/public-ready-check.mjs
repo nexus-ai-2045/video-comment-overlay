@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { loadPrivateMarkers } from "./private-markers.mjs";
 
 const root = process.cwd();
 const requiredFiles = [
@@ -44,8 +45,17 @@ if (trackedStatus.length) {
   failures.push(`tracked worktree is not clean: ${trackedStatus.join("; ")}`);
 }
 
+const warnings = [];
+const privateMarkers = loadPrivateMarkers({ cwd: root });
+if (privateMarkers.error) {
+  failures.push(`private marker config: ${privateMarkers.error}`);
+} else if (!privateMarkers.markers.length) {
+  warnings.push("private marker scan skipped: no private markers configured. A real pre-publication check needs .private-markers.txt / PRIVATE_MARKERS and PRIVATE_MARKERS_REQUIRED=1.");
+}
+for (const warning of warnings) console.error(`WARNING: ${warning}`);
+
 if (failures.length) {
-  console.error(JSON.stringify({ ok: false, failures }, null, 2));
+  console.error(JSON.stringify({ ok: false, failures, warnings }, null, 2));
   process.exit(1);
 }
 
@@ -53,5 +63,7 @@ console.log(JSON.stringify({
   ok: true,
   packageVersion: pkg.version,
   license: pkg.license,
-  requiredFiles: requiredFiles.length
+  requiredFiles: requiredFiles.length,
+  privateMarkers: privateMarkers.markers.length ? { configured: true, count: privateMarkers.markers.length } : { configured: false },
+  warnings
 }, null, 2));

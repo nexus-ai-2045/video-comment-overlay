@@ -20,8 +20,11 @@
 ```powershell
 npm run build:public-zip
 npm run build:extension-zip
+$env:PRIVATE_MARKERS_REQUIRED = "1"   # marker未設定ならskipではなく失敗させる
 node scripts/scan-private-markers.mjs dist/public-demo
 ```
+
+private marker scanは `.private-markers.txt` (repo直下、gitignore済み) か環境変数 `PRIVATE_MARKERS` のmarkerを使います。markerが未設定の場合は `WARNING: private marker scan skipped` を表示してexit 0になり、実際の検査は行われません。公開前・共有前の確認ではmarkerを設定し、`PRIVATE_MARKERS_REQUIRED=1` で実行してください。詳しくはREADMEの「private marker scan」を参照してください。
 
 生成物:
 
@@ -38,4 +41,4 @@ node scripts/scan-private-markers.mjs dist/public-demo
 - `README-public-demo.md` が展開後の起動手順を説明している。
 - `version.json` に生成時点のversion metadataが入っている。
 - `dist/public-demo/data/thread-comments.json` は匿名デモであり、実Discord URL、実ID、実参加者名、avatar URL、実本文、添付を含まない。
-- `node scripts/scan-private-markers.mjs dist/public-demo` が成功する。
+- markerを設定した状態で `node scripts/scan-private-markers.mjs dist/public-demo` が成功する（markerが未設定だとscanはskipされ `WARNING: private marker scan skipped` を表示して成功扱いになる。実際の公開前確認では `.private-markers.txt` か `PRIVATE_MARKERS` でmarkerを設定し、`PRIVATE_MARKERS_REQUIRED=1` を付けて実行する）。

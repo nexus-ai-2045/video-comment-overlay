@@ -164,7 +164,8 @@ npm run public:check
 `scripts/scan-private-markers.mjs` は、repoや配布物に混ざってはいけない識別子 (旧アカウント名、実ID など) を検出します。検出対象の値そのものはrepoに含めません。メンテナーがローカルで次のどちらか (または両方) で渡します。
 
 - 環境変数 `PRIVATE_MARKERS`: 1行に1 marker (改行区切り)。
-- ファイル: repo直下の `.private-markers.txt` (`.gitignore` 済み)。別の場所を使う場合は `PRIVATE_MARKERS_FILE` にパスを指定します。1行に1 marker、空行と `#` で始まる行は無視します。書式は `.private-markers.example.txt` (ダミー値のみ) を参照してください。
+- ファイル: repo直下の `.private-markers.txt` (`.gitignore` 済み)。サブディレクトリから実行してもgit work treeのrootにあるファイルを読みます。別の場所を使う場合は `PRIVATE_MARKERS_FILE` にパスを指定します。1行に1 marker、空行と `#` で始まる行は無視します。書式は `.private-markers.example.txt` (ダミー値のみ) を参照してください。
+- markerファイルがgit work tree内にあり、trackedまたはgitignoreされていない場合は、値を表示せずに exit 2 で失敗します。
 
 ```powershell
 Copy-Item .private-markers.example.txt .private-markers.txt   # 中身を実際のmarkerに置き換える
@@ -173,7 +174,7 @@ npm run scan:private
 
 検出時は `ファイル:行: private marker #番号 (sha256:先頭12桁)` だけを出力し、marker の値や該当行の本文は表示しません。番号は読み込んだmarkerリストの順番 (1始まり) です。
 
-markerが1件も設定されていない場合 (CIや新しいclone) は、`no private markers configured ... skipped` を表示し、`{"skipped": true}` を出力して exit 0 で終了します。そのため `npm run scan:private` / `npm run public:check` はmarkerなしでも止まりません。ただしこの場合は実際のscanは行われていないので、public化前の確認ではmarkerを設定して実行してください。markerの設定を必須にしたい場合は `--require-markers` または `PRIVATE_MARKERS_REQUIRED=1` を付けると、未設定時に exit 2 で失敗します。
+markerが1件も設定されていない場合 (CIや新しいclone) は、`WARNING: private marker scan skipped` を表示し (`public:check` 最後の `public-ready-check` でも同じWARNINGを表示)、`{"skipped": true}` を出力して exit 0 で終了します。そのため `npm run scan:private` / `npm run public:check` はmarkerなしでも止まりません。ただしこの場合は実際のscanは行われていないので、public化前の確認ではmarkerを設定して実行してください。markerの設定を必須にしたい場合は `--require-markers` または `PRIVATE_MARKERS_REQUIRED=1` を付けると、未設定時に exit 2 で失敗します。
 
 ## データ境界
 

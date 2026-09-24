@@ -13,7 +13,7 @@
 - LINE風、ニコニコ動画風、Discord風、字幕風の表示プリセットがある。
 - コメント一覧、編集フォーム、シークバー、設定ドロワーがある。
 - 匿名デモZIPは `npm run build:public-zip` で生成できる。
-- tracked sourceと配布ZIPのprivate marker scanをローカルコマンドで確認できる。
+- tracked sourceと配布ZIPのprivate marker scanをローカルコマンドで確認できる（markerはrepo外から渡す。未設定時はskipしてWARNINGを表示）。
 
 ## 改善済み
 
@@ -43,8 +43,11 @@ git status --short
 
 ```powershell
 npm run build:public-zip
+$env:PRIVATE_MARKERS_REQUIRED = "1"   # marker未設定ならskipではなく失敗させる
 node scripts/scan-private-markers.mjs dist/public-demo
 ```
+
+private marker scanは `.private-markers.txt` (repo直下、gitignore済み) か環境変数 `PRIVATE_MARKERS` のmarkerを使います。markerが未設定の場合は `WARNING: private marker scan skipped` を表示してexit 0になり、実際の検査は行われません。公開前・共有前の確認ではmarkerを設定し、`PRIVATE_MARKERS_REQUIRED=1` で実行してください。詳しくはREADMEの「private marker scan」を参照してください。
 
 公開前:
 

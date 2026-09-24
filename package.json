@@ -6,7 +6,7 @@
   "scripts": {
     "start": "python -m http.server 8765",
     "version:json": "node scripts/print-version.mjs",
-    "check": "node --check src/app.js && node --check src/version.js && node --check scripts/build-public-demo.mjs && node --check scripts/print-version.mjs && node --check scripts/scan-private-markers.mjs && node --check scripts/scan-private-markers.test.mjs && node --check scripts/validate-extension.mjs && node --check scripts/validate-comment-timeline.mjs && node --check scripts/public-ready-check.mjs && node --check extensions/chrome-capture/popup.js && node --check extensions/chrome-capture/content-script.js",
+    "check": "node --check src/app.js && node --check src/version.js && node --check scripts/build-public-demo.mjs && node --check scripts/print-version.mjs && node --check scripts/private-markers.mjs && node --check scripts/scan-private-markers.mjs && node --check scripts/scan-private-markers.test.mjs && node --check scripts/validate-extension.mjs && node --check scripts/validate-comment-timeline.mjs && node --check scripts/public-ready-check.mjs && node --check extensions/chrome-capture/popup.js && node --check extensions/chrome-capture/content-script.js",
     "check:extension": "node scripts/validate-extension.mjs",
     "scan:private": "node scripts/scan-private-markers.mjs --tracked",
     "test": "node --test scripts/scan-private-markers.test.mjs",
