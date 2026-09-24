@@ -9,6 +9,7 @@
 - marker未設定時はscanをskipしてexit 0 (`--require-markers` / `PRIVATE_MARKERS_REQUIRED=1` で失敗に変更可能)。
 - `npm run test` (node:test) を追加し、`npm run verify` に組み込み。
 - markerファイルがgit work tree内でtrackedまたはgitignoreされていない場合はexit 2で失敗するように変更。
+- markerファイルがsymlinkの場合はlink先の実ファイルもtracked / gitignore検査の対象にし、通常のファイルでない場合もexit 2で失敗するように変更。
 - 既定の `.private-markers.txt` をcwdではなくgit work treeのrootから探すように変更。
 - marker未設定時は `WARNING: private marker scan skipped` を表示し、`public-ready-check` にもWARNINGとして表示。
 

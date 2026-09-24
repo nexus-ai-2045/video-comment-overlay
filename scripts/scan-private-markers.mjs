@@ -40,7 +40,7 @@ function walk(target) {
   });
 }
 
-const { markers, sources, markersFile, error } = loadPrivateMarkers();
+const { markers, sources, markersFile, markersRealFile, error } = loadPrivateMarkers();
 
 if (error) {
   console.error(`ERROR: ${error}`);
@@ -60,7 +60,7 @@ if (!markers.length) {
 
 // The marker file is only exempt here because loadPrivateMarkers verified it is untracked and gitignored.
 const files = (trackedOnly ? gitTrackedFiles() : (roots.length ? roots : ["."]).flatMap(walk))
-  .filter((file) => path.resolve(file) !== markersFile);
+  .filter((file) => path.resolve(file) !== markersFile && path.resolve(file) !== markersRealFile);
 const hits = [];
 
 for (const file of files) {

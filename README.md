@@ -165,7 +165,7 @@ npm run public:check
 
 - 環境変数 `PRIVATE_MARKERS`: 1行に1 marker (改行区切り)。
 - ファイル: repo直下の `.private-markers.txt` (`.gitignore` 済み)。サブディレクトリから実行してもgit work treeのrootにあるファイルを読みます。別の場所を使う場合は `PRIVATE_MARKERS_FILE` にパスを指定します。1行に1 marker、空行と `#` で始まる行は無視します。書式は `.private-markers.example.txt` (ダミー値のみ) を参照してください。
-- markerファイルがgit work tree内にあり、trackedまたはgitignoreされていない場合は、値を表示せずに exit 2 で失敗します。
+- markerファイルがgit work tree内にあり、trackedまたはgitignoreされていない場合は、値を表示せずに exit 2 で失敗します。markerファイルがsymlinkの場合は、link先の実ファイルにも同じ検査をします。markerファイルが通常のファイルでない場合 (ディレクトリなど) も exit 2 です。
 
 ```powershell
 Copy-Item .private-markers.example.txt .private-markers.txt   # 中身を実際のmarkerに置き換える

@@ -139,6 +139,32 @@ test("git repo: force-added (tracked) default marker file fails", () => {
   assert.ok(!(result.stdout + result.stderr).includes(DUMMY_B));
 });
 
+test("git repo: symlinked marker file is checked against its target", () => {
+  const dir = gitRepo();
+  fs.writeFileSync(path.join(dir, ".gitignore"), ".private-markers.txt\n");
+  fs.writeFileSync(path.join(dir, "data.lst"), `${DUMMY_A}\n`);
+  git(dir, ["add", "data.lst"]);
+  fs.symlinkSync("data.lst", path.join(dir, ".private-markers.txt"));
+  const viaDefault = run(dir, ["--tracked"]);
+  assert.equal(viaDefault.status, 2);
+  assert.match(viaDefault.stderr, /tracked by git/);
+  assert.ok(!(viaDefault.stdout + viaDefault.stderr).includes(DUMMY_A));
+
+  const outside = tempDir();
+  const link = path.join(outside, "link.txt");
+  fs.symlinkSync(path.join(dir, "data.lst"), link);
+  const viaExplicit = run(dir, ["--tracked"], { PRIVATE_MARKERS_FILE: link });
+  assert.equal(viaExplicit.status, 2);
+  assert.ok(!(viaExplicit.stdout + viaExplicit.stderr).includes(DUMMY_A));
+});
+
+test("marker path that is a directory fails cleanly", () => {
+  const dir = tempDir();
+  const result = run(dir, ["."], { PRIVATE_MARKERS_FILE: tempDir() });
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /not a regular file/);
+});
+
 test("git repo: ignored default marker file at the repo root is used from a subdirectory", () => {
   const dir = gitRepo();
   fs.writeFileSync(path.join(dir, ".gitignore"), ".private-markers.txt\n");

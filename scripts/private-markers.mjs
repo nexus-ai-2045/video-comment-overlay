@@ -70,14 +70,22 @@ export function loadPrivateMarkers({ cwd = process.cwd(), env = process.env } = 
     ? path.resolve(cwd, explicitFile)
     : path.join(findWorkTreeRoot(cwd) || path.resolve(cwd), DEFAULT_MARKERS_FILE);
 
+  let markersRealFile = markersFile;
   if (fs.existsSync(markersFile)) {
-    const error = checkMarkerFileIsPrivate(markersFile, label);
-    if (error) return { markers: [], sources, markersFile, error };
+    // A symlink must not let a tracked or non-ignored target pass, so check the link and its target.
+    markersRealFile = fs.realpathSync(markersFile);
+    if (!fs.statSync(markersRealFile).isFile()) {
+      return { markers: [], sources, markersFile, markersRealFile, error: `Private marker file (${label}) is not a regular file.` };
+    }
+    const error =
+      checkMarkerFileIsPrivate(markersFile, label) ||
+      (markersRealFile !== markersFile ? checkMarkerFileIsPrivate(markersRealFile, label) : null);
+    if (error) return { markers: [], sources, markersFile, markersRealFile, error };
     markers.push(...parseMarkers(fs.readFileSync(markersFile, "utf8")));
     sources.push(explicitFile ? "env:PRIVATE_MARKERS_FILE" : DEFAULT_MARKERS_FILE);
   } else if (explicitFile) {
-    return { markers: [], sources, markersFile, error: "PRIVATE_MARKERS_FILE is set but the file does not exist." };
+    return { markers: [], sources, markersFile, markersRealFile, error: "PRIVATE_MARKERS_FILE is set but the file does not exist." };
   }
 
-  return { markers: [...new Set(markers)], sources, markersFile, error: null };
+  return { markers: [...new Set(markers)], sources, markersFile, markersRealFile, error: null };
 }
