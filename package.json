@@ -6,10 +6,11 @@
   "scripts": {
     "start": "python -m http.server 8765",
     "version:json": "node scripts/print-version.mjs",
-    "check": "node --check src/app.js && node --check src/version.js && node --check scripts/build-public-demo.mjs && node --check scripts/print-version.mjs && node --check scripts/scan-private-markers.mjs && node --check scripts/validate-extension.mjs && node --check scripts/validate-comment-timeline.mjs && node --check scripts/public-ready-check.mjs && node --check extensions/chrome-capture/popup.js && node --check extensions/chrome-capture/content-script.js",
+    "check": "node --check src/app.js && node --check src/version.js && node --check scripts/build-public-demo.mjs && node --check scripts/print-version.mjs && node --check scripts/private-markers.mjs && node --check scripts/scan-private-markers.mjs && node --check scripts/scan-private-markers.test.mjs && node --check scripts/validate-extension.mjs && node --check scripts/validate-comment-timeline.mjs && node --check scripts/public-ready-check.mjs && node --check extensions/chrome-capture/popup.js && node --check extensions/chrome-capture/content-script.js",
     "check:extension": "node scripts/validate-extension.mjs",
     "scan:private": "node scripts/scan-private-markers.mjs --tracked",
-    "verify": "npm run check && npm run check:extension && npm run build:public-zip && npm run scan:private",
+    "test": "node --test scripts/scan-private-markers.test.mjs",
+    "verify": "npm run check && npm run test && npm run check:extension && npm run build:public-zip && npm run scan:private",
     "build:public-demo": "node scripts/build-public-demo.mjs",
     "build:extension-zip": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-extension-zip.ps1",
     "validate:timeline": "node scripts/validate-comment-timeline.mjs",
