@@ -7,3 +7,6 @@ dist/
 .env.*
 data/
 local-data/
+
+# Local private marker list for scripts/scan-private-markers.mjs (never commit)
+.private-markers.txt

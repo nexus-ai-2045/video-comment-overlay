@@ -28,7 +28,7 @@
 | README | 更新済み / 要目視 | public向けに「MVP」「visible-partial」「WebM」「一時HTTPサーバー」の注意を最終確認する |
 | SECURITY.md | 追加済み | public化後の連絡先やSecurity Advisories運用を決める |
 | LICENSE | MIT追加済み | public化前に内容を目視確認する |
-| secret scan | ローカル一部OK | `npm run scan:private` と配布ZIP scanを再実行する |
+| secret scan | ローカル一部OK | `.private-markers.txt` か `PRIVATE_MARKERS` でmarkerを設定したうえで `PRIVATE_MARKERS_REQUIRED=1 npm run scan:private` と配布ZIP scanを再実行する (未設定だとscanはskipされる) |
 | personal path scan | ローカル一部OK | ローカルユーザーパスや個人名義がsource archiveにないことを再確認する |
 | Chrome拡張実機 | 部分OK | 導入ガイドとスクショは追加済み。Discord / YouTube Live / Twitchで手動確認する |
 | GitHub visibility | 未実施 | 対象repo、正確な操作、見える範囲を明示してyesを待つ |

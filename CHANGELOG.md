@@ -2,6 +2,13 @@
 
 このプロジェクトは、リリース単位で `package.json` の `version` を更新します。配布ZIPには、ビルド時点のGit commit、branch、dirty状態を `version.json` と画面表示へ埋め込みます。
 
+## Unreleased
+
+- private marker scanの検出対象をscriptから削除し、環境変数 `PRIVATE_MARKERS` / `PRIVATE_MARKERS_FILE` またはgitignore済みの `.private-markers.txt` から読むように変更。
+- 検出結果はファイル・行・marker番号・sha256先頭だけを表示し、markerの値を出さないように変更。
+- marker未設定時はscanをskipしてexit 0 (`--require-markers` / `PRIVATE_MARKERS_REQUIRED=1` で失敗に変更可能)。
+- `npm run test` (node:test) を追加し、`npm run verify` に組み込み。
+
 ## 0.1.1 - public前の配布導線調整
 
 - Chrome拡張の保存前プレビューと保存範囲指定を追加。
