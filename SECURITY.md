@@ -1,6 +1,6 @@
 # セキュリティ方針
 
-このリポジトリは現在 private 前提です。public化、外部共有、配布、GitHub visibility変更は、公開前レビューと現在会話での明示承認があるまで行いません。
+このリポジトリは GitHub 上ですでに public です。追加の外部共有、配布、デプロイ、Release作成は、レビューと現在会話での明示承認があるまで行いません。visibility 変更は行いません。
 
 ## 対象
 
@@ -21,6 +21,6 @@
 - 実コメントJSON、rawログ、添付、画像はprivateデータです。repoや匿名デモZIPには含めません。
 - 録画はブラウザの画面共有とMediaRecorderを使い、ローカルで完結します。
 
-## 公開前の扱い
+## 報告の扱い
 
-public化前は、脆弱性報告・レビュー・共有はprivate GitHub repo内または現在会話で扱います。public化後に必要であれば、GitHub Security Advisoriesや専用連絡先を設定します。
+脆弱性報告・レビューは、GitHub Issues、GitHub Security Advisories、または現在会話で扱います。必要に応じて専用連絡先を追加します。

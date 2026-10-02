@@ -157,7 +157,7 @@ npm run public:check
 | `npm run test` | private marker scannerの回帰テスト (`node:test`) |
 | `npm run scan:private` | Git管理下ファイルのprivate marker scan |
 | `npm run verify` | 構文、テスト、ZIP生成、private marker scanをまとめて実行 |
-| `npm run public:check` | public化前のローカル確認をまとめて実行 |
+| `npm run public:check` | 配布・共有前のローカル確認をまとめて実行 |
 
 ### private marker scan
 
@@ -174,7 +174,7 @@ npm run scan:private
 
 検出時は `ファイル:行: private marker #番号 (sha256:先頭12桁)` だけを出力し、marker の値や該当行の本文は表示しません。番号は読み込んだmarkerリストの順番 (1始まり) です。
 
-markerが1件も設定されていない場合 (CIや新しいclone) は、`WARNING: private marker scan skipped` を表示し (`public:check` 最後の `public-ready-check` でも同じWARNINGを表示)、`{"skipped": true}` を出力して exit 0 で終了します。そのため `npm run scan:private` / `npm run public:check` はmarkerなしでも止まりません。ただしこの場合は実際のscanは行われていないので、public化前の確認ではmarkerを設定して実行してください。markerの設定を必須にしたい場合は `--require-markers` または `PRIVATE_MARKERS_REQUIRED=1` を付けると、未設定時に exit 2 で失敗します。
+markerが1件も設定されていない場合 (CIや新しいclone) は、`WARNING: private marker scan skipped` を表示し (`public:check` 最後の `public-ready-check` でも同じWARNINGを表示)、`{"skipped": true}` を出力して exit 0 で終了します。そのため `npm run scan:private` / `npm run public:check` はmarkerなしでも止まりません。ただしこの場合は実際のscanは行われていないので、共有前・配布前の確認ではmarkerを設定して実行してください。markerの設定を必須にしたい場合は `--require-markers` または `PRIVATE_MARKERS_REQUIRED=1` を付けると、未設定時に exit 2 で失敗します。
 
 ## データ境界
 
@@ -208,7 +208,7 @@ GitHubのsource ZIPにも private データやテストデータは含めない�
 
 別渡しデータの作り方と受け渡し方は [docs/DATA_HANDOFF.md](docs/DATA_HANDOFF.md) を参照してください。
 
-アプリ右上の `更新確認` は、GitHub Releasesの最新リリースを見に行きます。新しい版がある場合はリリースページを開きます。repoがprivateの間、またはRelease未作成の間は、更新情報なしとして扱います。
+アプリ右上の `更新確認` は、GitHub Releasesの最新リリースを見に行きます。新しい版がある場合はリリースページを開きます。repoはpublicです。Release未作成の間は、更新情報なしとして扱います。
 
 詳しくは [SHARE_REVIEW.md](SHARE_REVIEW.md) を参照してください。
 
@@ -240,29 +240,21 @@ git status --short
 
 実Discordログの取得状況はローカルprivateデータとして扱います。repoと配布ZIPには、実URL、実ID、実参加者名、元本文、avatar URL、添付を含めません。
 
-## public化前の残務
+## public化後の残務
 
-2026-07-15時点で、PR #1、PR #2、PR #3はmainへmerge済みです。`package.json` は `0.1.1` で、main上の `npm run public:check` は成功しています。
+2026-10-02時点で、GitHub repository はすでに public です。PR #1、PR #2、PR #3はmainへmerge済みです。`package.json` は `0.1.1` で、main上の `npm run public:check` は成功しています。visibility 変更は不要で、行いません。
 
-public化前に残っている作業:
+残っている作業:
 
 | 優先度 | 残務 | 状態 |
 |---|---|---|
 | 高 | Chrome拡張をDiscord / YouTube Live / Twitchの3サイトで手動確認 | 未完了 |
 | 高 | README、LICENSE、SECURITY.md、PUBLIC_READY.md、CHANGELOG.mdの最終目視 | 未完了 |
-| 高 | source filesとcommit historyがWeb上に見えることの人間確認 | 未完了 |
-| 高 | GitHub repository visibility変更の明示承認 | 未承認 |
-| 中 | public化後にGitHub Release `v0.1.1` と配布ZIPを作る | 未実施 |
+| 中 | 必要なら GitHub Release `v0.1.1` と配布ZIPを作る | 未実施（人間承認後のみ） |
 | 中 | GitHub About / topicsを整える | 任意 |
 
-visibility変更を行う場合の対象と操作:
-
-```powershell
-gh repo edit nexus-ai-2045/video-comment-overlay --visibility public
-```
-
-この操作は、対象repo、見える範囲、確認済み項目を現在会話で明示し、ユーザーの明確なyesを受けるまで実行しません。
+Release作成、追加のデプロイ、SNS投稿、デモURL発行は、対象と操作を現在会話で明示し、ユーザーの明確なyesを受けるまで実行しません。
 
 ## 公開境界
 
-このリポジトリは private 前提です。公開、外部共有、デプロイ、GitHub visibility 変更は、人間レビューと現在会話での明示承認なしに行いません。
+このリポジトリは GitHub 上ですでに public です。追加の外部共有、デプロイ、SNS投稿、デモURL発行、Release作成は、人間レビューと現在会話での明示承認なしに行いません。visibility 変更は行いません。実コメントJSONなどの private データ境界は別途維持します。
