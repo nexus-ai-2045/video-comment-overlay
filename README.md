@@ -157,7 +157,7 @@ npm run public:check
 | `npm run test` | private marker scannerの回帰テスト (`node:test`) |
 | `npm run scan:private` | Git管理下ファイルのprivate marker scan |
 | `npm run verify` | 構文、テスト、ZIP生成、private marker scanをまとめて実行 |
-| `npm run public:check` | public化前のローカル確認をまとめて実行 |
+| `npm run public:check` | 配布・共有前のローカル確認をまとめて実行 |
 
 ### private marker scan
 
@@ -174,7 +174,7 @@ npm run scan:private
 
 検出時は `ファイル:行: private marker #番号 (sha256:先頭12桁)` だけを出力し、marker の値や該当行の本文は表示しません。番号は読み込んだmarkerリストの順番 (1始まり) です。
 
-markerが1件も設定されていない場合 (CIや新しいclone) は、`WARNING: private marker scan skipped` を表示し (`public:check` 最後の `public-ready-check` でも同じWARNINGを表示)、`{"skipped": true}` を出力して exit 0 で終了します。そのため `npm run scan:private` / `npm run public:check` はmarkerなしでも止まりません。ただしこの場合は実際のscanは行われていないので、public化前の確認ではmarkerを設定して実行してください。markerの設定を必須にしたい場合は `--require-markers` または `PRIVATE_MARKERS_REQUIRED=1` を付けると、未設定時に exit 2 で失敗します。
+markerが1件も設定されていない場合 (CIや新しいclone) は、`WARNING: private marker scan skipped` を表示し (`public:check` 最後の `public-ready-check` でも同じWARNINGを表示)、`{"skipped": true}` を出力して exit 0 で終了します。そのため `npm run scan:private` / `npm run public:check` はmarkerなしでも止まりません。ただしこの場合は実際のscanは行われていないので、共有前・配布前の確認ではmarkerを設定して実行してください。markerの設定を必須にしたい場合は `--require-markers` または `PRIVATE_MARKERS_REQUIRED=1` を付けると、未設定時に exit 2 で失敗します。
 
 ## データ境界
 
