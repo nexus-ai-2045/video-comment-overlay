@@ -17,6 +17,7 @@
 - コメント一覧から時刻、表示名、本文、非表示を編集する
 - YouTube iframe API が使える場合は動画の再生、停止、シークに同期する
 - 共有前レビュー用の匿名デモパッケージを生成する
+- Chrome拡張MVPで、表示中のDiscord / YouTube Live / TwitchコメントをJSON保存する
 
 ## すぐ試す
 
@@ -108,6 +109,8 @@ npm run start
 
 一般ユーザーが自分のブラウザで開いているDiscord / YouTube Live / Twitchからコメントを取得する口は、Chrome拡張としてviewer本体から分ける方針です。viewer本体はローカルJSONの再生・調整・録画に集中し、取得拡張はユーザー操作で対象タブから読み取り、`video_comment_overlay.v1` JSONとprivate manifestを書き出します。詳細は [docs/CAPTURE_EXTENSION_PLAN.md](docs/CAPTURE_EXTENSION_PLAN.md) を参照してください。
 
+初期MVPは [extensions/chrome-capture](extensions/chrome-capture) にあります。これは表示中DOMから見えている範囲だけを取得するため、出力は `visible-partial` として扱います。
+
 初期対象:
 
 | サービス | 入力候補 | 状態 |
@@ -123,6 +126,7 @@ npm run start
 ```powershell
 npm run version:json
 npm run check
+npm run check:extension
 npm run verify
 npm run build:public-zip
 ```
@@ -131,6 +135,7 @@ npm run build:public-zip
 |---|---|
 | `npm run version:json` | package version、Git commit、branch、dirty状態をJSONで表示 |
 | `npm run check` | JavaScript構文チェック |
+| `npm run check:extension` | Chrome拡張MVPの権限と禁止APIを確認 |
 | `npm run build:public-zip` | 匿名デモの `dist/public-demo/` とZIPを生成 |
 | `npm run verify` | 構文、ZIP生成、private marker scanをまとめて実行 |
 
