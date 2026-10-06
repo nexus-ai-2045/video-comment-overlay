@@ -1329,9 +1329,14 @@ function loadYoutube() {
 }
 
 function loadLocalVideo(file) {
-  const url = URL.createObjectURL(file);
+  const objectUrl = URL.createObjectURL(file);
+  const parsedUrl = new URL(objectUrl);
+  if (parsedUrl.protocol !== "blob:") {
+    URL.revokeObjectURL(objectUrl);
+    throw new Error("ローカル動画URLの形式が不正です。");
+  }
   els.youtubeFrame.removeAttribute("src");
-  els.localVideo.src = url;
+  els.localVideo.setAttribute("src", parsedUrl.href);
   els.videoHost.classList.add("has-local");
   els.videoHost.classList.remove("has-youtube");
   resetPlayback();
