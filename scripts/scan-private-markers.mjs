@@ -3,6 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 const privateMarkers = [
+  ["lm", "93"],
+  ["lm", "93", "TRQN5WSL"],
+  ["L", "MQ"],
   ["1476517988860", "694610"],
   ["1464854485779", "218535"],
   ["2026-07", "-06"],
