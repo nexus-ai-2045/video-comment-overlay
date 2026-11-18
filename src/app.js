@@ -1248,6 +1248,9 @@ function resetPlayback() {
   timerStartedAt = performance.now();
   timerRunning = false;
   if (els.videoHost.classList.contains("has-local")) els.localVideo.currentTime = 0;
+  if (els.videoHost.classList.contains("has-youtube") && youtubeReady && youtubePlayer?.seekTo) {
+    youtubePlayer.seekTo(0, true);
+  }
   updateCommentListState(0);
   updateDiscordReplayState(0);
   updateSeekUi(0);

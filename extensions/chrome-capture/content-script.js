@@ -247,8 +247,12 @@
     let mode = "idle";
     let lastScan = null;
     let lastError = "";
+    let sourceKey = "";
 
     function upsertRows(rows, reason) {
+      const currentSource = `${location.hostname}${location.pathname}`;
+      if (sourceKey && sourceKey !== currentSource) rowsByKey.clear();
+      sourceKey = currentSource;
       let added = 0;
       for (const row of rows) {
         const key = row.platformMessageId || `${row.authorName}\n${row.text}\n${row.timestamp}`;
