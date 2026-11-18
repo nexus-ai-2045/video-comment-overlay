@@ -315,8 +315,9 @@ function normalizeData(data) {
   const participants = data.participants || {};
   const videoStartIso = resolveVideoStartIso(data);
   const videoStart = videoStartIso ? Date.parse(videoStartIso) : null;
+  const commentTimeMode = data.timeline?.commentTimeMode;
   const shouldPreferTimestamp =
-    data.timeline?.commentTimeMode && data.timeline.commentTimeMode !== "absolute";
+    Boolean(commentTimeMode) && commentTimeMode !== "absolute" && commentTimeMode !== "relative-visible-order";
   let skippedBeforeVideoStart = 0;
   const comments = (data.comments || []).flatMap((comment, index) => {
     const participant = participants[comment.authorId] || {};
@@ -451,7 +452,13 @@ async function loadSourceCommentFile(file) {
 function parseCommentSourceText(text) {
   const trimmed = text.trim();
   if (!trimmed) return [];
-  if (trimmed.startsWith("{") || trimmed.startsWith("[")) return JSON.parse(trimmed);
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    try {
+      return JSON.parse(trimmed);
+    } catch (error) {
+      if (!/\r?\n/.test(trimmed)) throw error;
+    }
+  }
   return trimmed
     .split(/\r?\n/)
     .map((line) => line.trim())

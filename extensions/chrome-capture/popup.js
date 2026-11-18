@@ -75,8 +75,12 @@ function getSelectedCapture() {
       participants[comment.authorId] = latestCapture.participants[comment.authorId];
     }
   }
+  const { sourceRaw, ...captureWithoutSourceRaw } = latestCapture;
+  const selectedSourceRaw =
+    Array.isArray(sourceRaw) && sourceRaw.length === count ? { sourceRaw: sourceRaw.slice(start - 1, end) } : {};
   return {
-    ...latestCapture,
+    ...captureWithoutSourceRaw,
+    ...selectedSourceRaw,
     participants,
     comments: selectedComments,
     manifest: {
